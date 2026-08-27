@@ -1,46 +1,153 @@
 import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 
 import { MeddyButton } from '@/components/meddy-button';
-import { MeddyMascot } from '@/components/meddy-mascot';
+import { MedicineCard } from '@/components/medicine-card';
+import { NotificationBell } from '@/components/notification-bell';
 import { ScreenShell, sharedStyles } from '@/components/screen-shell';
 import { Palette } from '@/constants/theme';
-import { useAppState } from '@/context/app-state';
+import { useCareCircles } from '@/context/care-circle-context';
+import { useMedicines } from '@/context/medicine-context';
+import { formatMedicineTime } from '@/lib/medicines';
+import type { CareCircleRole } from '@/types/care-circle';
+
+const meddyBanner = require('@/assets/images/meddy/banner.png');
+
+function roleLabel(role: CareCircleRole) {
+  return role === 'family' ? 'Family Member' : `${role[0].toUpperCase()}${role.slice(1)}`;
+}
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { careCircle, userName } = useAppState();
-  const firstName = userName?.trim().split(/\s+/)[0];
-  const greeting = firstName ? `Good morning, ${firstName}!` : 'Good morning!';
+  const { circles, isLoading: circlesLoading, error: circlesError, refreshCircles } = useCareCircles();
+  const { allMedicines, medicines, isLoading: medicinesLoading, error: medicinesError, refreshMedicines } = useMedicines();
+  const dashboardMedicines = medicines.slice(0, 3);
+  const dashboardCircle = circles[0];
+  const nextSharedMedicine = allMedicines.find((medicine) => medicine.care_circle_id === dashboardCircle?.id && medicine.active);
 
   return (
-    <ScreenShell title={greeting}>
-      <View style={styles.hero}>
-        <View style={styles.heroCopy}><Text style={styles.eyebrow}>START WITH ONE SMALL STEP</Text><Text style={styles.heroTitle}>Let’s set up your first medicine.</Text><Text style={styles.heroText}>Add the medicine name, dose, and the time you usually take it.</Text></View>
-        <MeddyMascot state="default" style={styles.mascot} />
+    <ScreenShell rightAction={<NotificationBell />}>
+      <View style={[sharedStyles.card, styles.banner]}>
+        <View style={styles.bannerCopy}>
+          <Text style={styles.bannerTitle}>Stay on track</Text>
+          <Text style={styles.bannerText}>Your medicines, made simple.</Text>
+        </View>
+        <Image accessibilityLabel="Meddy waving" resizeMode="contain" source={meddyBanner} style={styles.bannerImage} />
       </View>
-      <MeddyButton label="+  Add your first medicine" onPress={() => router.push('/medicines' as Href)} style={styles.primaryAction} />
 
-      <Text style={sharedStyles.sectionTitle}>Care Circle</Text>
-      {careCircle ? (
-        <View style={[sharedStyles.card, styles.circleCard]}><View style={styles.circleIcon}><Text style={styles.circleIconText}>♡</Text></View><View style={styles.circleCopy}><Text style={styles.circleTitle}>{careCircle.name}</Text><Text style={styles.circleText}>Your private care group is ready.</Text></View><MeddyButton label="Open" onPress={() => router.push('/care-circle' as Href)} variant="secondary" style={styles.openButton} /></View>
+      <View style={styles.medicineActionRow}>
+        <MeddyButton
+          label="+ Add Medicine"
+          onPress={() => router.push('/medicine/add' as Href)}
+          variant="secondary"
+          style={styles.addButton}
+        />
+      </View>
+      {medicinesLoading ? (
+        <View style={[sharedStyles.card, styles.medicineState]}>
+          <ActivityIndicator color={Palette.strongPink} />
+          <Text style={styles.stateText}>Loading medicines…</Text>
+        </View>
+      ) : medicinesError ? (
+        <View style={[sharedStyles.card, styles.medicineState]}>
+          <Text accessibilityRole="alert" style={styles.stateError}>Medicines could not be loaded.</Text>
+          <MeddyButton label="Try Again" onPress={() => void refreshMedicines()} variant="secondary" style={styles.retryButton} />
+        </View>
+      ) : medicines.length === 0 ? (
+        <View style={[sharedStyles.card, styles.emptyCard]}>
+          <Text style={styles.emptyTitle}>No medicines yet</Text>
+          <Text style={styles.emptyText}>Add one to get started.</Text>
+        </View>
       ) : (
-        <View style={[sharedStyles.card, styles.careCard]}>
-          <Text style={styles.careTitle}>Support feels better together.</Text>
-          <Text style={styles.careText}>Stay connected with family or caregivers who can help you manage your medicines.</Text>
-          <View style={styles.actions}><MeddyButton label="Create Care Circle" onPress={() => router.push('/care/create' as Href)} /><MeddyButton label="Join Care Circle" onPress={() => router.push('/care/join' as Href)} variant="secondary" /></View>
+        <View style={styles.medicineList}>
+          {dashboardMedicines.map((medicine) => (
+            <MedicineCard
+              key={medicine.id}
+              medicine={medicine}
+              onPress={() => router.push(`/medicine/${medicine.id}` as Href)}
+            />
+          ))}
+          {medicines.length > dashboardMedicines.length ? (
+            <MeddyButton label="View All Medicines" onPress={() => router.push('/medicines' as Href)} variant="secondary" style={styles.viewAllButton} />
+          ) : null}
         </View>
       )}
-      <View style={styles.note}><Text style={styles.noteIcon}>i</Text><Text style={styles.noteText}>Your day will stay simple and uncluttered until you add your first medicine.</Text></View>
+
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Care Circle</Text>
+      </View>
+      {circlesLoading ? (
+        <View style={[sharedStyles.card, styles.circleState]}>
+          <ActivityIndicator color={Palette.strongPink} />
+          <Text style={styles.stateText}>Loading Care Circles…</Text>
+        </View>
+      ) : circlesError ? (
+        <View style={[sharedStyles.card, styles.circleState]}>
+          <Text accessibilityRole="alert" style={styles.stateError}>Care Circles could not be loaded.</Text>
+          <MeddyButton label="Try Again" onPress={() => void refreshCircles()} variant="secondary" style={styles.retryButton} />
+        </View>
+      ) : dashboardCircle ? (
+        <View style={[sharedStyles.card, styles.circleCard]}>
+          <View style={styles.circleSummary}>
+            <View style={styles.circleIcon}><Text style={styles.circleIconText}>♡</Text></View>
+            <View style={styles.circleCopy}>
+              <Text style={styles.circleTitle}>{dashboardCircle.name}</Text>
+              <Text style={styles.circleMeta}>{roleLabel(dashboardCircle.role)} · {dashboardCircle.memberCount} {dashboardCircle.memberCount === 1 ? 'member' : 'members'}</Text>
+              {nextSharedMedicine ? <Text style={styles.sharedMedicine}>Next: {nextSharedMedicine.name} · {formatMedicineTime(nextSharedMedicine.schedules[0]?.time_of_day)}</Text> : null}
+              {circles.length > 1 ? <Text style={styles.moreCircles}>+ {circles.length - 1} more {circles.length === 2 ? 'circle' : 'circles'}</Text> : null}
+            </View>
+          </View>
+          <MeddyButton
+            label={circles.length > 1 ? 'View Care Circles' : 'Open Circle'}
+            onPress={() => router.push((circles.length > 1 ? '/care-circle' : `/care/${dashboardCircle.id}`) as Href)}
+            variant="secondary"
+            style={styles.openButton}
+          />
+        </View>
+      ) : (
+        <View style={[sharedStyles.card, styles.emptyCard]}>
+          <Text style={styles.emptyTitle}>No Care Circle yet</Text>
+          <View style={styles.circleActions}>
+            <MeddyButton label="Create Circle" onPress={() => router.push('/care/create' as Href)} style={styles.circleButton} />
+            <MeddyButton label="Join with Code" onPress={() => router.push('/care/join' as Href)} variant="secondary" style={styles.circleButton} />
+          </View>
+        </View>
+      )}
     </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  hero: { minHeight: 230, borderRadius: 30, backgroundColor: Palette.softPink, padding: 22, overflow: 'hidden', flexDirection: 'row', borderWidth: 1, borderColor: Palette.border },
-  heroCopy: { flex: 1, justifyContent: 'center', zIndex: 1 }, eyebrow: { color: Palette.strongPink, fontSize: 11, fontWeight: '800', letterSpacing: 0.8, maxWidth: 190 }, heroTitle: { color: Palette.text, fontSize: 25, lineHeight: 32, fontWeight: '800', marginTop: 9, maxWidth: 220 }, heroText: { color: Palette.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 8, maxWidth: 215 }, mascot: { width: 145, height: 205, alignSelf: 'flex-end', marginRight: -14, marginBottom: -18 },
-  primaryAction: { marginTop: 18 }, careCard: { backgroundColor: Palette.softPink }, careTitle: { color: Palette.text, fontSize: 20, fontWeight: '800' }, careText: { color: Palette.textSecondary, fontSize: 16, lineHeight: 24, marginTop: 8 }, actions: { gap: 11, marginTop: 20 },
-  circleCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Palette.softPink }, circleIcon: { width: 48, height: 48, borderRadius: 18, backgroundColor: Palette.primaryPink, alignItems: 'center', justifyContent: 'center' }, circleIconText: { color: Palette.white, fontSize: 28 }, circleCopy: { flex: 1, marginLeft: 13 }, circleTitle: { color: Palette.text, fontSize: 17, fontWeight: '800' }, circleText: { color: Palette.textSecondary, fontSize: 13, marginTop: 4 }, openButton: { minHeight: 46, paddingHorizontal: 14 },
-  note: { flexDirection: 'row', alignItems: 'center', gap: 11, marginTop: 22, padding: 16 }, noteIcon: { width: 24, height: 24, borderRadius: 12, backgroundColor: Palette.lightPink, color: Palette.strongPink, textAlign: 'center', lineHeight: 24, fontWeight: '800' }, noteText: { flex: 1, color: Palette.textSecondary, fontSize: 13, lineHeight: 19 },
+  banner: { height: 126, position: 'relative', overflow: 'hidden', padding: 0, backgroundColor: Palette.softPink },
+  bannerImage: { position: 'absolute', right: 2, top: 0, width: '43%', height: '100%' },
+  bannerCopy: { width: '59%', height: '100%', justifyContent: 'center', paddingLeft: 18, paddingRight: 8 },
+  bannerTitle: { color: Palette.text, fontSize: 19, lineHeight: 24, fontWeight: '800' },
+  bannerText: { color: Palette.textSecondary, fontSize: 14, lineHeight: 20, marginTop: 5 },
+  medicineActionRow: { minHeight: 44, alignItems: 'flex-end', justifyContent: 'center', marginTop: 20, marginBottom: 10 },
+  sectionHeader: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 24, marginBottom: 12 },
+  sectionTitle: { flexShrink: 1, color: Palette.text, fontSize: 21, lineHeight: 27, fontWeight: '800' },
+  addButton: { minHeight: 44, borderRadius: 15, backgroundColor: Palette.softPink, paddingHorizontal: 14 },
+  medicineState: { minHeight: 92, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16 },
+  stateText: { color: Palette.textSecondary, fontSize: 14, lineHeight: 20 },
+  stateError: { color: Palette.danger, fontSize: 14, lineHeight: 20, fontWeight: '700', textAlign: 'center' },
+  retryButton: { minHeight: 44, borderRadius: 15, paddingHorizontal: 14 },
+  medicineList: { gap: 10 },
+  viewAllButton: { minHeight: 46, borderRadius: 15 },
+  emptyCard: { padding: 16 },
+  emptyTitle: { color: Palette.text, fontSize: 18, lineHeight: 24, fontWeight: '800' },
+  emptyText: { color: Palette.textSecondary, fontSize: 15, lineHeight: 23, marginTop: 6 },
+  circleActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  circleButton: { flex: 1, minHeight: 48, borderRadius: 16, paddingHorizontal: 12 },
+  circleState: { minHeight: 92, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16 },
+  circleCard: { padding: 18 },
+  circleSummary: { flexDirection: 'row', alignItems: 'center' },
+  circleIcon: { width: 48, height: 48, borderRadius: 18, backgroundColor: Palette.lightPink, alignItems: 'center', justifyContent: 'center' },
+  circleIconText: { color: Palette.strongPink, fontSize: 28 },
+  circleCopy: { flex: 1, marginLeft: 13 },
+  circleTitle: { color: Palette.text, fontSize: 18, lineHeight: 24, fontWeight: '800' },
+  circleMeta: { color: Palette.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 3 },
+  sharedMedicine: { color: Palette.text, fontSize: 13, lineHeight: 19, fontWeight: '700', marginTop: 3 },
+  moreCircles: { color: Palette.strongPink, fontSize: 13, lineHeight: 19, fontWeight: '700', marginTop: 3 },
+  openButton: { alignSelf: 'flex-start', minHeight: 46, borderRadius: 15, marginTop: 16, paddingHorizontal: 16 },
 });

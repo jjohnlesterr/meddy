@@ -1,20 +1,37 @@
-import { PropsWithChildren } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { PropsWithChildren, ReactNode } from 'react';
+import { Platform, ScrollView, ScrollViewProps, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { KeyboardSafeFormScreen } from '@/components/keyboard-safe-form-screen';
+import { MeddyHeader } from '@/components/meddy-header';
 import { BottomTabInset, MaxContentWidth, Palette } from '@/constants/theme';
 
-export function ScreenShell({ title, subtitle, children }: PropsWithChildren<{ title: string; subtitle?: string }>) {
+type ScreenShellProps = PropsWithChildren<{
+  title?: string;
+  subtitle?: string;
+  keyboardSafe?: boolean;
+  onBack?: () => void;
+  rightAction?: ReactNode;
+  refreshControl?: ScrollViewProps['refreshControl'];
+}>;
+
+export function ScreenShell({ title, subtitle, children, keyboardSafe = false, onBack, rightAction, refreshControl }: ScreenShellProps) {
   const insets = useSafeAreaInsets();
-  return (
-    <ScrollView style={styles.scroll} contentContainerStyle={[styles.outer, { paddingTop: Math.max(insets.top, 20) + 12, paddingBottom: (Platform.OS === 'web' ? 100 : BottomTabInset) + insets.bottom + 28 }]}>
-      <View style={styles.content}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-        {children}
-      </View>
-    </ScrollView>
+  const outerStyle = [styles.outer, { paddingTop: Math.max(insets.top, 20) + 12, paddingBottom: (Platform.OS === 'web' ? 100 : BottomTabInset) + insets.bottom + 28 }];
+  const content = (
+    <View style={styles.content}>
+      <MeddyHeader onBack={onBack} rightAction={rightAction} />
+      {title ? <Text style={styles.title}>{title}</Text> : null}
+      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      {children}
+    </View>
   );
+
+  if (keyboardSafe) {
+    return <KeyboardSafeFormScreen contentStyle={outerStyle} safeAreaEdges={['left', 'right']}>{content}</KeyboardSafeFormScreen>;
+  }
+
+  return <ScrollView style={styles.scroll} contentContainerStyle={outerStyle} refreshControl={refreshControl}>{content}</ScrollView>;
 }
 
 export const sharedStyles = StyleSheet.create({
