@@ -2,10 +2,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 
-import { supabase, supabaseConfigurationError } from '@/lib/supabase';
-
-type CareCircle = { name: string; code: string };
-type JoinRequestStatus = 'none' | 'pending' | 'accepted' | 'rejected';
+import { executeSupabaseRequest, supabase, supabaseConfigurationError } from '@/lib/supabase';
 
 export type OnboardingPreference = 'self' | 'caregiver';
 
@@ -36,13 +33,6 @@ type AppStateValue = {
   completeOnboarding: (preference: OnboardingPreference) => Promise<AuthActionResult>;
   refreshProfile: () => Promise<void>;
   logout: () => Promise<AuthActionResult>;
-  careCircle: CareCircle | null;
-  joinPending: boolean;
-  joinRequestStatus: JoinRequestStatus;
-  createCircle: (name: string) => CareCircle;
-  submitJoinRequest: () => void;
-  reviewJoinRequest: (decision: 'accepted' | 'rejected') => void;
-  showExampleJoinRequest: () => void;
 };
 
 const AppStateContext = createContext<AppStateValue | null>(null);
@@ -58,18 +48,16 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
-  // These remain local-only until the Care Circle backend is implemented.
-  const [careCircle, setCareCircle] = useState<CareCircle | null>(null);
-  const [joinPending, setJoinPending] = useState(false);
-  const [joinRequestStatus, setJoinRequestStatus] = useState<JoinRequestStatus>('none');
-
   const loadProfile = useCallback(async (user: User, fullName?: string) => {
-    if (!supabase) return;
+    const client = supabase;
+    if (!client) return;
     setIsProfileLoading(true);
     setProfileError(null);
 
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+      const { data, error } = await executeSupabaseRequest(() =>
+        client.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+      );
       if (error) throw error;
 
       if (data) {
@@ -78,11 +66,13 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       }
 
       const nameFromMetadata = typeof user.user_metadata.full_name === 'string' ? user.user_metadata.full_name : '';
-      const { data: created, error: createError } = await supabase
-        .from('profiles')
-        .upsert({ id: user.id, full_name: fullName?.trim() || nameFromMetadata }, { onConflict: 'id' })
-        .select('*')
-        .single();
+      const { data: created, error: createError } = await executeSupabaseRequest(() =>
+        client
+          .from('profiles')
+          .upsert({ id: user.id, full_name: fullName?.trim() || nameFromMetadata }, { onConflict: 'id' })
+          .select('*')
+          .single(),
+      );
 
       if (createError) throw createError;
       setProfile(created as Profile);
@@ -127,6 +117,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       if (!active) return;
 
       if (error) {
+        if (__DEV__) console.error('[Meddy auth] Could not restore the Supabase session.', error);
         setProfileError(error.message);
       } else {
         setSession(data.session);
@@ -202,19 +193,26 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   }, []);
 
   const completeOnboarding = useCallback(async (preference: OnboardingPreference): Promise<AuthActionResult> => {
-    if (!supabase) return { error: supabaseConfigurationError };
+    const client = supabase;
+    if (!client) return { error: supabaseConfigurationError };
     if (!session?.user) return { error: 'Your session has expired. Please log in again.' };
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ onboarding_type: preference, onboarding_completed: true })
-      .eq('id', session.user.id)
-      .select('*')
-      .single();
+    try {
+      const { data, error } = await executeSupabaseRequest(() =>
+        client
+          .from('profiles')
+          .update({ onboarding_type: preference, onboarding_completed: true })
+          .eq('id', session.user.id)
+          .select('*')
+          .single(),
+      );
 
-    if (error) return { error: error.message };
-    setProfile(data as Profile);
-    return { error: null };
+      if (error) return { error: error.message };
+      setProfile(data as Profile);
+      return { error: null };
+    } catch (error) {
+      return { error: messageFromError(error) };
+    }
   }, [session]);
 
   const logout = useCallback(async (): Promise<AuthActionResult> => {
@@ -224,9 +222,6 @@ export function AppStateProvider({ children }: PropsWithChildren) {
 
     setSession(null);
     setProfile(null);
-    setCareCircle(null);
-    setJoinPending(false);
-    setJoinRequestStatus('none');
     return { error: null };
   }, []);
 
@@ -245,19 +240,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     completeOnboarding,
     refreshProfile,
     logout,
-    careCircle,
-    joinPending,
-    joinRequestStatus,
-    createCircle: (name) => {
-      const circle = { name: name.trim(), code: `MEDDY-${Math.floor(1000 + Math.random() * 9000)}` };
-      setCareCircle(circle);
-      setJoinRequestStatus('none');
-      return circle;
-    },
-    submitJoinRequest: () => setJoinPending(true),
-    reviewJoinRequest: setJoinRequestStatus,
-    showExampleJoinRequest: () => setJoinRequestStatus('pending'),
-  }), [careCircle, completeOnboarding, isInitializing, isProfileLoading, joinPending, joinRequestStatus, logout, profile, profileError, refreshProfile, requestPasswordReset, session, signIn, signUp]);
+  }), [completeOnboarding, isInitializing, isProfileLoading, logout, profile, profileError, refreshProfile, requestPasswordReset, session, signIn, signUp]);
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }

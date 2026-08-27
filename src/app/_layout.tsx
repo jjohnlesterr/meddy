@@ -4,8 +4,12 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { AuthLoadingScreen } from '@/components/auth-loading-screen';
+import { NotificationResponseObserver } from '@/components/notification-response-observer';
 import { Palette } from '@/constants/theme';
+import { MeddyActivityProvider } from '@/context/activity-context';
 import { AppStateProvider, useAppState } from '@/context/app-state';
+import { CareCircleProvider } from '@/context/care-circle-context';
+import { MedicineProvider } from '@/context/medicine-context';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -20,8 +24,15 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={meddyTheme}>
       <AppStateProvider>
-        <StatusBar style="dark" />
-        <RootNavigator />
+        <CareCircleProvider>
+          <MedicineProvider>
+            <MeddyActivityProvider>
+              <StatusBar style="dark" />
+              <NotificationResponseObserver />
+              <RootNavigator />
+            </MeddyActivityProvider>
+          </MedicineProvider>
+        </CareCircleProvider>
       </AppStateProvider>
     </ThemeProvider>
   );
@@ -51,7 +62,19 @@ function RootNavigator() {
 
       <Stack.Protected guard={isAuthenticated && Boolean(profile) && onboardingComplete}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="care" />
+        <Stack.Screen name="notifications" />
+        <Stack.Screen name="care/create" />
+        <Stack.Screen name="care/join" />
+        <Stack.Screen name="care/[id]" />
+        <Stack.Screen name="care/settings/[id]" />
+        <Stack.Screen name="medicine/add" />
+        <Stack.Screen name="medicine/[id]" />
+        <Stack.Screen name="medicine/edit/[id]" />
+        {/* dev/notifications is intentionally NOT declared here: it is a
+            development-only screen at src/app/dev/notifications.tsx that Expo
+            Router auto-discovers. Declaring it explicitly (and conditionally)
+            produced "No route named dev/notifications exists in nested children".
+            The screen itself renders a stub when __DEV__ is false. */}
       </Stack.Protected>
 
       <Stack.Protected guard={isAuthenticated && !profile && !isProfileLoading}>
