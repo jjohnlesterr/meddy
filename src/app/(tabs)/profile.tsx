@@ -8,6 +8,7 @@ import { MeddyMascot } from '@/components/meddy-mascot';
 import { NotificationBell } from '@/components/notification-bell';
 import { ScreenShell, sharedStyles } from '@/components/screen-shell';
 import { Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 import { useAppState } from '@/context/app-state';
 
 const settings = [
@@ -51,6 +52,6 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  profileCard: { minHeight: 126, borderRadius: 26, backgroundColor: Palette.softPink, borderWidth: 1, borderColor: Palette.border, padding: 16, flexDirection: 'row', alignItems: 'center', overflow: 'hidden' }, mascot: { width: 94, height: 102 }, profileCopy: { flex: 1, marginLeft: 12 }, name: { color: Palette.text, fontSize: 22, fontWeight: '800' }, accountHint: { color: Palette.textSecondary, fontSize: 14, lineHeight: 20, marginTop: 6 },
-  menu: { borderRadius: 24, borderWidth: 1, borderColor: Palette.border, paddingHorizontal: 18 }, row: { minHeight: 72, flexDirection: 'row', alignItems: 'center' }, divider: { borderBottomWidth: 1, borderBottomColor: Palette.border }, icon: { width: 40, height: 40, borderRadius: 14, backgroundColor: Palette.softPink, alignItems: 'center', justifyContent: 'center' }, iconText: { color: Palette.strongPink, fontSize: 15, fontWeight: '800' }, rowLabel: { flex: 1, marginLeft: 13, color: Palette.text, fontSize: 16, fontWeight: '700' }, chevron: { color: Palette.strongPink, fontSize: 29 }, pressed: { opacity: 0.65 }, error: { color: Palette.danger, fontSize: 14, lineHeight: 20, fontWeight: '700', marginTop: 18, textAlign: 'center' }, logout: { marginTop: 26 },
+  profileCard: { minHeight: 126, borderRadius: 26, backgroundColor: Palette.softPink, borderWidth: 1, borderColor: Palette.border, padding: 16, flexDirection: 'row', alignItems: 'center', overflow: 'hidden' }, mascot: { width: 94, height: 102 }, profileCopy: { flex: 1, marginLeft: 12 }, name: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 22 }, accountHint: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 14, lineHeight: 20, marginTop: 6 },
+  menu: { borderRadius: 24, borderWidth: 1, borderColor: Palette.border, paddingHorizontal: 18 }, row: { minHeight: 72, flexDirection: 'row', alignItems: 'center' }, divider: { borderBottomWidth: 1, borderBottomColor: Palette.border }, icon: { width: 40, height: 40, borderRadius: 14, backgroundColor: Palette.softPink, alignItems: 'center', justifyContent: 'center' }, iconText: { color: Palette.strongPink, fontFamily: FontFamily.extraBold, fontSize: 15 }, rowLabel: { flex: 1, marginLeft: 13, color: Palette.text, fontFamily: FontFamily.bold, fontSize: 16 }, chevron: { color: Palette.strongPink, fontFamily: FontFamily.regular, fontSize: 29 }, pressed: { opacity: 0.65 }, error: { color: Palette.danger, fontFamily: FontFamily.bold, fontSize: 14, lineHeight: 20, marginTop: 18, textAlign: 'center' }, logout: { marginTop: 26 },
 });

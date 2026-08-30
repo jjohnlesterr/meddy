@@ -49,10 +49,17 @@
       [
         "expo-audio",
         {
-          "microphonePermission": false,
-          "recordAudioAndroid": false,
+          "microphonePermission": "Meddy needs microphone access to record voice reminders for your medicines.",
+          "recordAudioAndroid": true,
           "enableBackgroundPlayback": false,
           "enableBackgroundRecording": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Meddy needs photo library access so you can add a photo of your medicine.",
+          "cameraPermission": "Meddy needs camera access so you can take a photo of your medicine."
         }
       ],
       "expo-asset"

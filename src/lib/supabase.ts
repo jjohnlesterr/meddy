@@ -35,6 +35,23 @@ export const supabase: SupabaseClient | null =
       })
     : null;
 
+/**
+ * Turns a Supabase/Postgres error into a friendly, user-facing message.
+ * Recognized Postgres error codes (e.g. a length CHECK constraint a client
+ * bypass managed to trip) always get a friendly message, in every build —
+ * never the raw Postgres text, which would leak schema/constraint details.
+ * For anything else, falls back to the raw message only in development (for
+ * debugging) and to `fallback` in production.
+ */
+export function friendlySupabaseErrorMessage(error: unknown, fallback: string): string {
+  const code = (error as SupabaseErrorLike | null | undefined)?.code;
+  if (code === '23514') return 'One of the fields is too long or contains an invalid value. Please shorten it and try again.';
+  if (code === '23502') return 'Please fill in all required fields.';
+  if (code === '23505') return 'That value is already in use. Please choose another.';
+  if (__DEV__ && error instanceof Error) return error.message;
+  return fallback;
+}
+
 export class SupabaseSessionExpiredError extends Error {
   constructor() {
     super('Your session has expired. Please log in again.');
