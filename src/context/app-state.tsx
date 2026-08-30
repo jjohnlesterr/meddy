@@ -2,7 +2,9 @@ import type { Session, User } from '@supabase/supabase-js';
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 
-import { executeSupabaseRequest, supabase, supabaseConfigurationError } from '@/lib/supabase';
+import { executeSupabaseRequest, friendlySupabaseErrorMessage, supabase, supabaseConfigurationError } from '@/lib/supabase';
+
+export const FULL_NAME_MAX_LENGTH = 80;
 
 export type OnboardingPreference = 'self' | 'caregiver';
 
@@ -38,7 +40,7 @@ type AppStateValue = {
 const AppStateContext = createContext<AppStateValue | null>(null);
 
 function messageFromError(error: unknown) {
-  return error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+  return friendlySupabaseErrorMessage(error, 'Something went wrong. Please try again.');
 }
 
 export function AppStateProvider({ children }: PropsWithChildren) {

@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Image, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 import { Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 
 const meddyWordmark = require('@/assets/images/meddy/logo with name.png');
 
@@ -37,7 +38,7 @@ const styles = StyleSheet.create({
   left: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   wordmark: { width: 136, height: 46 },
   backButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: 6, borderRadius: 14 },
-  backIcon: { color: Palette.text, fontSize: 34, lineHeight: 38, fontWeight: '500' },
+  backIcon: { color: Palette.text, fontSize: 34, lineHeight: 38, fontFamily: FontFamily.medium },
   right: { minHeight: 44, alignItems: 'flex-end', justifyContent: 'center', marginLeft: 12 },
   pressed: { opacity: 0.6 },
 });
