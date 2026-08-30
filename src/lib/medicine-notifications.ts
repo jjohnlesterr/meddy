@@ -30,7 +30,8 @@ type StoredNotification = {
   medicineId: string;
   scheduleId: string;
   fingerprint: string;
-  recurringIdentifier?: string;
+  /** One OS-scheduled notification id per fire-day. A "daily" schedule has exactly one. */
+  recurringIdentifiers?: string[];
   snoozeIdentifier?: string;
 };
 
@@ -101,8 +102,30 @@ function recurringIdentifier(scheduleId: string) {
   return `meddy-reminder-${scheduleId}`;
 }
 
+function weeklyRecurringIdentifier(scheduleId: string, weekday: number) {
+  return `meddy-reminder-${scheduleId}-${weekday}`;
+}
+
 function snoozeIdentifier(scheduleId: string) {
   return `meddy-snooze-${scheduleId}`;
+}
+
+// null = every day (use the single DAILY trigger); otherwise the sorted, deduped
+// list of 1=Sunday..7=Saturday weekdays the reminder should fire on.
+function resolveScheduleWeekdays(schedule: MedicineSchedule): number[] | null {
+  if (schedule.frequency_type === 'weekdays' || schedule.frequency_type === 'custom') {
+    const days = (schedule.days_of_week ?? []).filter((day) => day >= 1 && day <= 7);
+    if (days.length > 0) return [...new Set(days)].sort((a, b) => a - b);
+  }
+  return null;
+}
+
+/** The OS-notification identifiers a schedule is expected to have right now. */
+function expectedRecurringIdentifiers(schedule: MedicineSchedule): string[] {
+  const weekdays = resolveScheduleWeekdays(schedule);
+  return weekdays === null
+    ? [recurringIdentifier(schedule.id)]
+    : weekdays.map((weekday) => weeklyRecurringIdentifier(schedule.id, weekday));
 }
 
 // Returns the bundled custom sound filename for a reminder sound (e.g.
@@ -127,7 +150,16 @@ function customSoundFile(sound: ReminderSound): string | undefined {
 // v4: real bundled WAV sounds (gentle_chime / soft_bell / morning_tone) replace
 //     the omitted-sound "system default" channels — a channel created under v3
 //     has no custom sound and Android will not let us add one in place.
-const CHANNEL_VERSION = 'v4';
+// v5: the three WAV files themselves were replaced with longer (4-8s),
+//     more distinct alarm-appropriate versions — same filenames, different
+//     audio content. Android channels are immutable, so even though the
+//     resource name is unchanged, a device that already created a v4 channel
+//     needs a fresh channel id to pick up the new sound.
+// v6: the three WAV files were extended again to ~30s each (looped/varied
+//     motifs, not just a naive stretch) — same filenames, new audio content,
+//     same reasoning as v5: a device on a v5 channel would otherwise keep
+//     playing the old ~7s sound indefinitely.
+const CHANNEL_VERSION = 'v6';
 
 // Legacy channel ids created by earlier builds. They are deleted on startup so
 // a device that made a silent / vibration-only / alarm-stream / system-default
@@ -143,6 +175,10 @@ const LEGACY_CHANNEL_IDS = (Object.keys(SOUND_DETAILS) as ReminderSound[]).flatM
     `${base}-novib-v2`,
     `${base}-v3`,
     `${base}-novib-v3`,
+    `${base}-v4`,
+    `${base}-novib-v4`,
+    `${base}-v5`,
+    `${base}-novib-v5`,
   ];
 });
 
@@ -262,12 +298,23 @@ function medicineDosage(medicine: Medicine) {
   return [medicine.dosage_value, medicine.dosage_unit].filter(Boolean).join(' ');
 }
 
-function notificationCopy(medicine: Medicine) {
+const MEAL_TIMING_LABELS: Record<string, string> = {
+  before_food: 'Before food',
+  after_food: 'After food',
+  with_food: 'With food',
+};
+
+function notificationCopy(medicine: Medicine, schedule: MedicineSchedule) {
   const dosage = medicineDosage(medicine);
-  const details = [dosage ? `Dosage: ${dosage}.` : null, medicine.instructions?.trim() || null].filter(Boolean);
+  const title = dosage ? `Time for ${medicine.name} · ${dosage}` : `Time for ${medicine.name}`;
+
+  const mealTimingLabel = schedule.meal_timing ? MEAL_TIMING_LABELS[schedule.meal_timing] : undefined;
+  const instructions = medicine.instructions?.trim() || undefined;
+  const bodyParts = [mealTimingLabel, instructions].filter((part): part is string => Boolean(part));
+
   return {
-    title: `Time for ${medicine.name}`,
-    body: details.join(' ') || 'It is time for your scheduled medicine.',
+    title,
+    body: bodyParts.join(' · ') || 'It is time for your scheduled medicine.',
   };
 }
 
@@ -299,7 +346,7 @@ function notificationData(
   schedule: MedicineSchedule,
   fingerprint: string,
 ): MedicineNotificationData {
-  const copy = notificationCopy(medicine);
+  const copy = notificationCopy(medicine, schedule);
   return {
     kind: 'medicine_reminder',
     userId,
@@ -358,87 +405,102 @@ function deviceTimezone() {
   }
 }
 
-async function scheduleDailyReminder(
+async function scheduleOneReminder(
   Notifications: NotificationsModule,
-  userId: string,
-  desired: DesiredReminder,
+  identifier: string,
+  content: NotificationContentInput,
+  channelId: string,
+  hour: number,
+  minute: number,
+  weekday: number | null,
 ): Promise<string | null> {
-  const { medicine, schedule, fingerprint } = desired;
-  const data = notificationData(userId, medicine, schedule, fingerprint);
-  const { hour, minute } = scheduleTime(schedule.time_of_day);
-  const identifier = recurringIdentifier(schedule.id);
-  const channelId = channelIdentifier(schedule.reminder_sound, schedule.vibration_enabled);
-
   await Notifications.cancelScheduledNotificationAsync(identifier);
   try {
-    const scheduledId = await Notifications.scheduleNotificationAsync({
+    return await Notifications.scheduleNotificationAsync({
       identifier,
-      content: notificationContent(data, Notifications),
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour,
-        minute,
-        channelId,
-      },
+      content,
+      trigger:
+        weekday === null
+          ? { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute, channelId }
+          : { type: Notifications.SchedulableTriggerInputTypes.WEEKLY, weekday, hour, minute, channelId },
     });
-    if (__DEV__) {
-      const now = new Date();
-      const triggerAt = nextDailyOccurrence(hour, minute);
-      const passedToday = triggerAt.getDate() !== now.getDate() || triggerAt.getMonth() !== now.getMonth();
-      const offsetMin = -now.getTimezoneOffset();
-      const offset = `${offsetMin >= 0 ? '+' : '-'}${String(Math.floor(Math.abs(offsetMin) / 60)).padStart(2, '0')}:${String(Math.abs(offsetMin) % 60).padStart(2, '0')}`;
-      console.log(
-        '[Meddy reminder]\n' +
-          `medicine: ${medicine.name} (${medicine.care_circle_id ? 'Care Circle' : 'personal'})\n` +
-          `stored time: ${schedule.time_of_day} -> ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} (24h, seconds forced to 00)\n` +
-          `current device time: ${now.toString()}\n` +
-          `computed trigger: ${triggerAt.toString()} (daily, repeats)\n` +
-          `timezone: ${deviceTimezone()} (UTC${offset})\n` +
-          `scheduled notification id: ${scheduledId}\n` +
-          `channel: ${channelId} | sound: ${customSoundFile(schedule.reminder_sound) ?? 'android system default'} | vibration: ${schedule.vibration_enabled}` +
-          (passedToday
-            ? `\nnote: ${schedule.time_of_day} has already passed today on this device — the daily trigger's first fire is TOMORROW at ${schedule.time_of_day}. This is not a one-minute shift; it is the normal next-occurrence behavior.`
-            : ''),
-      );
-      console.log('[Meddy notifications] Scheduled reminder', {
-        scope: medicine.care_circle_id ? 'care_circle' : 'personal',
-        medicine: medicine.name,
-        medicineId: medicine.id,
-        careCircleId: medicine.care_circle_id,
-        scheduleId: schedule.id,
-        storedScheduleTime: schedule.time_of_day,
-        parsedHourMinute: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
-        currentDeviceTime: now.toString(),
-        calculatedTriggerDateTime: triggerAt.toString(),
-        minutesUntilTrigger: Math.round((triggerAt.getTime() - now.getTime()) / 60000),
-        timezone: deviceTimezone(),
-        utcOffsetMinutes: offsetMin,
-        reminderSound: schedule.reminder_sound,
-        soundMode: customSoundFile(schedule.reminder_sound) ? `bundled:${customSoundFile(schedule.reminder_sound)}` : 'android-system-default',
-        vibrationEnabled: schedule.vibration_enabled,
-        channelId,
-        notificationId: scheduledId,
-      });
-    }
-    return scheduledId;
   } catch (error) {
     if (__DEV__) {
-      console.error('[Meddy notifications] scheduleNotificationAsync failed', {
-        medicine: medicine.name,
-        scheduleId: schedule.id,
-        careCircleId: medicine.care_circle_id,
-        hour,
-        minute,
-        channelId,
-        error,
-      });
+      console.error('[Meddy notifications] scheduleNotificationAsync failed', { identifier, weekday, hour, minute, channelId, error });
     }
     return null;
   }
 }
 
+/** Schedules every OS-level notification a schedule's frequency requires (one for "daily", one per selected weekday otherwise). Returns the identifiers that were successfully scheduled. */
+async function scheduleReminderForSchedule(
+  Notifications: NotificationsModule,
+  userId: string,
+  desired: DesiredReminder,
+): Promise<string[]> {
+  const { medicine, schedule, fingerprint } = desired;
+  const data = notificationData(userId, medicine, schedule, fingerprint);
+  const content = notificationContent(data, Notifications);
+  const { hour, minute } = scheduleTime(schedule.time_of_day);
+  const channelId = channelIdentifier(schedule.reminder_sound, schedule.vibration_enabled);
+  const weekdays = resolveScheduleWeekdays(schedule);
+
+  const results = await Promise.allSettled(
+    weekdays === null
+      ? [scheduleOneReminder(Notifications, recurringIdentifier(schedule.id), content, channelId, hour, minute, null)]
+      : weekdays.map((weekday) =>
+          scheduleOneReminder(Notifications, weeklyRecurringIdentifier(schedule.id, weekday), content, channelId, hour, minute, weekday),
+        ),
+  );
+  const identifiers = results
+    .filter((result): result is PromiseFulfilledResult<string | null> => result.status === 'fulfilled')
+    .map((result) => result.value)
+    .filter((value): value is string => Boolean(value));
+
+  if (__DEV__) {
+    const now = new Date();
+    const triggerAt = nextDailyOccurrence(hour, minute);
+    const passedToday = triggerAt.getDate() !== now.getDate() || triggerAt.getMonth() !== now.getMonth();
+    const offsetMin = -now.getTimezoneOffset();
+    const offset = `${offsetMin >= 0 ? '+' : '-'}${String(Math.floor(Math.abs(offsetMin) / 60)).padStart(2, '0')}:${String(Math.abs(offsetMin) % 60).padStart(2, '0')}`;
+    console.log(
+      '[Meddy reminder]\n' +
+        `medicine: ${medicine.name} (${medicine.care_circle_id ? 'Care Circle' : 'personal'})\n` +
+        `stored time: ${schedule.time_of_day} -> ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} (24h, seconds forced to 00)\n` +
+        `current device time: ${now.toString()}\n` +
+        `computed trigger(s): ${triggerAt.toString()} (${weekdays === null ? 'daily' : `weekdays ${weekdays.join(',')}`}, repeats)\n` +
+        `timezone: ${deviceTimezone()} (UTC${offset})\n` +
+        `scheduled notification ids: ${identifiers.join(', ')} (${identifiers.length}/${weekdays === null ? 1 : weekdays.length} succeeded)\n` +
+        `channel: ${channelId} | sound: ${customSoundFile(schedule.reminder_sound) ?? 'android system default'} | vibration: ${schedule.vibration_enabled}` +
+        (passedToday
+          ? `\nnote: ${schedule.time_of_day} has already passed today on this device — the first fire is on the next matching day at ${schedule.time_of_day}. This is not a one-minute shift; it is the normal next-occurrence behavior.`
+          : ''),
+    );
+    console.log('[Meddy notifications] Scheduled reminder', {
+      scope: medicine.care_circle_id ? 'care_circle' : 'personal',
+      medicine: medicine.name,
+      medicineId: medicine.id,
+      careCircleId: medicine.care_circle_id,
+      scheduleId: schedule.id,
+      storedScheduleTime: schedule.time_of_day,
+      parsedHourMinute: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+      frequencyType: schedule.frequency_type,
+      weekdays,
+      currentDeviceTime: now.toString(),
+      timezone: deviceTimezone(),
+      utcOffsetMinutes: offsetMin,
+      reminderSound: schedule.reminder_sound,
+      soundMode: customSoundFile(schedule.reminder_sound) ? `bundled:${customSoundFile(schedule.reminder_sound)}` : 'android-system-default',
+      vibrationEnabled: schedule.vibration_enabled,
+      channelId,
+      notificationIds: identifiers,
+    });
+  }
+  return identifiers;
+}
+
 async function cancelStoredNotification(Notifications: NotificationsModule, entry: StoredNotification) {
-  const identifiers = [entry.recurringIdentifier, entry.snoozeIdentifier].filter(
+  const identifiers = [...(entry.recurringIdentifiers ?? []), entry.snoozeIdentifier].filter(
     (identifier): identifier is string => Boolean(identifier),
   );
   await Promise.all(identifiers.map((identifier) => Notifications.cancelScheduledNotificationAsync(identifier)));
@@ -472,9 +534,9 @@ export async function reconcileMedicineNotifications(userId: string, medicines: 
 
     for (const [scheduleId, entry] of Object.entries(stored)) {
       const next = desired.get(scheduleId);
-      const recurringIsScheduled = entry.recurringIdentifier
-        ? scheduledIdentifiers.has(entry.recurringIdentifier)
-        : false;
+      const recurringIsScheduled =
+        Boolean(entry.recurringIdentifiers?.length) &&
+        entry.recurringIdentifiers!.every((identifier) => scheduledIdentifiers.has(identifier));
 
       if (!next || next.fingerprint !== entry.fingerprint || !recurringIsScheduled) {
         await cancelStoredNotification(Notifications, entry);
@@ -491,10 +553,9 @@ export async function reconcileMedicineNotifications(userId: string, medicines: 
       const data = parseMedicineNotificationData(request.content.data);
       if (!data || data.userId !== userId) continue;
       const next = desired.get(data.scheduleId);
-      const expectedIdentifiers = [
-        recurringIdentifier(data.scheduleId),
-        snoozeIdentifier(data.scheduleId),
-      ];
+      const expectedIdentifiers = next
+        ? [...expectedRecurringIdentifiers(next.schedule), snoozeIdentifier(data.scheduleId)]
+        : [snoozeIdentifier(data.scheduleId)];
       if (
         !next ||
         next.fingerprint !== data.fingerprint ||
@@ -520,14 +581,14 @@ export async function reconcileMedicineNotifications(userId: string, medicines: 
     }
 
     for (const [scheduleId, next] of desired) {
-      if (stored[scheduleId]?.recurringIdentifier) continue;
-      const identifier = await scheduleDailyReminder(Notifications, userId, next);
-      if (!identifier) continue;
+      if (stored[scheduleId]?.recurringIdentifiers?.length) continue;
+      const identifiers = await scheduleReminderForSchedule(Notifications, userId, next);
+      if (identifiers.length === 0) continue;
       stored[scheduleId] = {
         medicineId: next.medicine.id,
         scheduleId,
         fingerprint: next.fingerprint,
-        recurringIdentifier: identifier,
+        recurringIdentifiers: identifiers,
       };
     }
 
@@ -568,17 +629,21 @@ async function logReminderSyncDiagnostics(
     });
     const scheduledIds = new Set(mine.map((request) => request.identifier));
 
-    const details = [...desired.values()].map((entry) => ({
-      scope: entry.medicine.care_circle_id ? ('care_circle' as const) : ('personal' as const),
-      medicine: entry.medicine.name,
-      careCircleId: entry.medicine.care_circle_id,
-      scheduleId: entry.schedule.id,
-      time: entry.schedule.time_of_day,
-      reminderSound: entry.schedule.reminder_sound,
-      qualifies: Boolean(entry.medicine.active && entry.schedule.active),
-      expectedIdentifier: recurringIdentifier(entry.schedule.id),
-      isScheduledOnDevice: scheduledIds.has(recurringIdentifier(entry.schedule.id)),
-    }));
+    const details = [...desired.values()].map((entry) => {
+      const expectedIdentifiers = expectedRecurringIdentifiers(entry.schedule);
+      return {
+        scope: entry.medicine.care_circle_id ? ('care_circle' as const) : ('personal' as const),
+        medicine: entry.medicine.name,
+        careCircleId: entry.medicine.care_circle_id,
+        scheduleId: entry.schedule.id,
+        time: entry.schedule.time_of_day,
+        frequencyType: entry.schedule.frequency_type,
+        reminderSound: entry.schedule.reminder_sound,
+        qualifies: Boolean(entry.medicine.active && entry.schedule.active),
+        expectedIdentifiers,
+        isScheduledOnDevice: expectedIdentifiers.every((identifier) => scheduledIds.has(identifier)),
+      };
+    });
     const sharedDetails = details.filter((item) => item.scope === 'care_circle');
     const careCircleIds = [...new Set(sharedDetails.map((item) => item.careCircleId))];
 
@@ -591,7 +656,7 @@ async function logReminderSyncDiagnostics(
         `\nScheduled notifications on device: ${mine.length}` +
         `\nIDs: ${JSON.stringify([...scheduledIds])}` +
         `\nMissing (expected but NOT scheduled): ${JSON.stringify(
-          details.filter((item) => !item.isScheduledOnDevice).map((item) => item.expectedIdentifier),
+          details.filter((item) => !item.isScheduledOnDevice).flatMap((item) => item.expectedIdentifiers),
         )}`,
     );
     console.log('[Meddy notifications] Shared sync detail', details);
@@ -681,7 +746,7 @@ export async function snoozeMedicineNotification(data: MedicineNotificationData)
       medicineId: data.medicineId,
       scheduleId: data.scheduleId,
       fingerprint: data.fingerprint,
-      recurringIdentifier: previous?.recurringIdentifier,
+      recurringIdentifiers: previous?.recurringIdentifiers,
       snoozeIdentifier: scheduledIdentifier,
     };
     await writeStoredNotifications(data.userId, stored);
@@ -788,7 +853,8 @@ function describeTrigger(trigger: unknown): string {
   if (!trigger || typeof trigger !== 'object') return 'unknown';
   const value = trigger as Record<string, unknown>;
   if (typeof value.hour === 'number' && typeof value.minute === 'number') {
-    return `daily ${String(value.hour).padStart(2, '0')}:${String(value.minute).padStart(2, '0')}`;
+    const time = `${String(value.hour).padStart(2, '0')}:${String(value.minute).padStart(2, '0')}`;
+    return typeof value.weekday === 'number' ? `weekly (weekday ${value.weekday}) ${time}` : `daily ${time}`;
   }
   if (typeof value.seconds === 'number') {
     return `in ${value.seconds}s${value.repeats ? ' (repeats)' : ''}`;
