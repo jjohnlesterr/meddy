@@ -41,12 +41,16 @@ export type MeddyActivityItem = {
 export type MeddyActivityStore = {
   events: MeddyActivityItem[];
   readIds: string[];
+  /** Explicit "mark as unread" override — takes precedence over readIds and the lastSeenAt comparison, so a user can un-read an item that would otherwise be implicitly read. */
+  unreadIds: string[];
+  /** Ids the user dismissed from the notification center. Local-only — never deletes the underlying record (e.g. a pending join request). Works for both persisted `events` ids and live-derived ids (e.g. `join-in:<id>`). */
+  dismissedIds: string[];
   lastSeenAt: string | null;
 };
 
 const STORAGE_PREFIX = '@meddy/activity';
 const MAX_EVENTS = 100;
-const EMPTY: MeddyActivityStore = { events: [], readIds: [], lastSeenAt: null };
+const EMPTY: MeddyActivityStore = { events: [], readIds: [], unreadIds: [], dismissedIds: [], lastSeenAt: null };
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -81,6 +85,8 @@ async function readStore(userId: string): Promise<MeddyActivityStore> {
     return {
       events: Array.isArray(parsed.events) ? (parsed.events as MeddyActivityItem[]) : [],
       readIds: Array.isArray(parsed.readIds) ? (parsed.readIds as string[]) : [],
+      unreadIds: Array.isArray(parsed.unreadIds) ? (parsed.unreadIds as string[]) : [],
+      dismissedIds: Array.isArray(parsed.dismissedIds) ? (parsed.dismissedIds as string[]) : [],
       lastSeenAt: typeof parsed.lastSeenAt === 'string' ? parsed.lastSeenAt : null,
     };
   } catch (error) {
@@ -123,6 +129,30 @@ export async function markActivitySeen(userId: string) {
 export async function clearActivity(userId: string) {
   if (!userId) return;
   await writeStore(userId, { ...EMPTY });
+}
+
+/** Explicitly mark one notification read or unread, overriding the lastSeenAt-based default. */
+export async function setActivityItemRead(userId: string, id: string, read: boolean) {
+  if (!userId || !id) return;
+  const store = await readStore(userId);
+  if (read) {
+    store.readIds = Array.from(new Set([...store.readIds, id]));
+    store.unreadIds = store.unreadIds.filter((existing) => existing !== id);
+  } else {
+    store.unreadIds = Array.from(new Set([...store.unreadIds, id]));
+    store.readIds = store.readIds.filter((existing) => existing !== id);
+  }
+  await writeStore(userId, store);
+}
+
+/** Locally dismiss one or more feed items (by id, works for both persisted and live-derived items). Never touches the underlying Supabase record — e.g. dismissing a join-request notification does not cancel the request. */
+export async function dismissActivity(userId: string, ids: string | string[]) {
+  if (!userId) return;
+  const idsToDismiss = Array.isArray(ids) ? ids : [ids];
+  if (idsToDismiss.length === 0) return;
+  const store = await readStore(userId);
+  store.dismissedIds = Array.from(new Set([...store.dismissedIds, ...idsToDismiss]));
+  await writeStore(userId, store);
 }
 
 /** Stable per-occurrence id: the same event on the same minute de-duplicates. */
