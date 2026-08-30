@@ -7,15 +7,26 @@ import { MeddyButton } from '@/components/meddy-button';
 import { MedicineForm } from '@/components/medicine-form';
 import { ScreenShell, sharedStyles } from '@/components/screen-shell';
 import { Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 import { useCareCircles } from '@/context/care-circle-context';
 import { useMedicines } from '@/context/medicine-context';
-import type { Medicine, MedicineInput } from '@/types/medicine';
+import { friendlySupabaseErrorMessage } from '@/lib/supabase';
+import type { MealTiming, Medicine, MedicineInput, PersonalizedAudioSource, Weekday } from '@/types/medicine';
+
+const ALL_DAYS: Weekday[] = [1, 2, 3, 4, 5, 6, 7];
 
 function messageFromError(error: unknown) {
-  return error instanceof Error ? error.message : 'We could not update this medicine. Please try again.';
+  return friendlySupabaseErrorMessage(error, 'We could not update this medicine. Please try again.');
+}
+
+// "daily" is stored with days_of_week: null (see resolveScheduleDays in lib/medicines.ts) — reload that as all 7 days selected so the chips accurately reflect what's saved.
+function daysOfWeekFromSchedule(schedule: Medicine['schedules'][number] | undefined): Weekday[] {
+  const stored = (schedule?.days_of_week ?? []).filter((day): day is Weekday => day >= 1 && day <= 7);
+  return stored.length > 0 ? stored : ALL_DAYS;
 }
 
 function valuesFromMedicine(medicine: Medicine): MedicineInput {
+  const schedule = medicine.schedules[0];
   return {
     name: medicine.name,
     dosageValue: medicine.dosage_value ?? '',
@@ -23,11 +34,20 @@ function valuesFromMedicine(medicine: Medicine): MedicineInput {
     form: medicine.form ?? '',
     instructions: medicine.instructions ?? '',
     notes: medicine.notes ?? '',
-    timeOfDay: medicine.schedules[0]?.time_of_day.slice(0, 5) ?? '',
-    reminderSound: medicine.schedules[0]?.reminder_sound ?? 'gentle_chime',
-    vibrationEnabled: medicine.schedules[0]?.vibration_enabled ?? true,
-    snoozeEnabled: medicine.schedules[0]?.snooze_enabled ?? true,
-    snoozeMinutes: medicine.schedules[0]?.snooze_minutes ?? 10,
+    photoLocalUri: null,
+    photoStoragePath: medicine.photo_storage_path ?? null,
+    timeOfDay: schedule?.time_of_day.slice(0, 5) ?? '',
+    daysOfWeek: daysOfWeekFromSchedule(schedule),
+    mealTiming: (schedule?.meal_timing as MealTiming | null) ?? null,
+    personalizedAudioUri: schedule?.personalized_audio_uri ?? null,
+    personalizedAudioStoragePath: schedule?.personalized_audio_storage_path ?? null,
+    personalizedAudioDurationSeconds: schedule?.personalized_audio_duration_seconds ?? null,
+    personalizedAudioSource: (schedule?.personalized_audio_source as PersonalizedAudioSource | null) ?? null,
+    personalizedAudioLabel: schedule?.personalized_audio_label ?? null,
+    reminderSound: schedule?.reminder_sound ?? 'gentle_chime',
+    vibrationEnabled: schedule?.vibration_enabled ?? true,
+    snoozeEnabled: schedule?.snooze_enabled ?? true,
+    snoozeMinutes: schedule?.snooze_minutes ?? 10,
     active: medicine.active,
   };
 }
@@ -112,10 +132,10 @@ export default function EditMedicineScreen() {
 
 const styles = StyleSheet.create({
   centered: { alignItems: 'center', gap: 14 },
-  message: { color: Palette.textSecondary, fontSize: 16 },
-  error: { color: Palette.danger, fontSize: 15, lineHeight: 22, textAlign: 'center', fontWeight: '700' },
+  message: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 16 },
+  error: { color: Palette.danger, fontFamily: FontFamily.bold, fontSize: 15, lineHeight: 22, textAlign: 'center' },
   retry: { minHeight: 50 },
   circleContext: { borderRadius: 18, borderWidth: 1, borderColor: Palette.border, backgroundColor: Palette.softPink, paddingHorizontal: 16, paddingVertical: 13, marginBottom: 20 },
-  circleContextLabel: { color: Palette.textSecondary, fontSize: 11, fontWeight: '800', letterSpacing: 0.8 },
-  circleContextName: { color: Palette.text, fontSize: 17, lineHeight: 23, fontWeight: '800', marginTop: 3 },
+  circleContextLabel: { color: Palette.textSecondary, fontFamily: FontFamily.extraBold, fontSize: 11, letterSpacing: 0.8 },
+  circleContextName: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 17, lineHeight: 23, marginTop: 3 },
 });

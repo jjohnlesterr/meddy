@@ -8,6 +8,7 @@ import { MedicineCard } from '@/components/medicine-card';
 import { NotificationBell } from '@/components/notification-bell';
 import { ScreenShell, sharedStyles } from '@/components/screen-shell';
 import { Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 import { useMedicines } from '@/context/medicine-context';
 
 export default function MedicinesScreen() {
@@ -59,14 +60,14 @@ export default function MedicinesScreen() {
 
 const styles = StyleSheet.create({
   stateCard: { alignItems: 'center', gap: 12 },
-  stateText: { color: Palette.textSecondary, fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  error: { color: Palette.danger, fontSize: 17, lineHeight: 23, fontWeight: '800', textAlign: 'center' },
+  stateText: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  error: { color: Palette.danger, fontFamily: FontFamily.extraBold, fontSize: 17, lineHeight: 23, textAlign: 'center' },
   retry: { minHeight: 50, marginTop: 4 },
   emptyCard: { alignItems: 'center', backgroundColor: Palette.softPink, borderWidth: 1, borderColor: Palette.border, borderRadius: 28, padding: 22 },
   mascotStage: { height: 190, width: '100%', alignItems: 'center', justifyContent: 'center' },
   mascot: { width: 180, height: 205 },
-  emptyTitle: { color: Palette.text, fontSize: 23, lineHeight: 30, fontWeight: '800', textAlign: 'center' },
-  emptyText: { color: Palette.textSecondary, fontSize: 16, lineHeight: 23, textAlign: 'center', marginTop: 7 },
+  emptyTitle: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 23, lineHeight: 30, textAlign: 'center' },
+  emptyText: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 16, lineHeight: 23, textAlign: 'center', marginTop: 7 },
   emptyButton: { alignSelf: 'stretch', marginTop: 20 },
   addButton: { alignSelf: 'flex-end', minHeight: 48, borderRadius: 16, paddingHorizontal: 16 },
   list: { gap: 12, marginTop: 16 },

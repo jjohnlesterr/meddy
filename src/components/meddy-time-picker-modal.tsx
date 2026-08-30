@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import { Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 
 const ITEM_HEIGHT = 52;
 const VISIBLE_ITEMS = 5;
@@ -241,26 +242,26 @@ export function MeddyTimePickerModal({ value, onCancel, onDone }: MeddyTimePicke
 const styles = StyleSheet.create({
   modalScreen: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(43, 43, 43, 0.3)', padding: 20 },
   modalCard: { alignSelf: 'center', width: '100%', maxWidth: 430, borderRadius: 26, backgroundColor: Palette.white, paddingHorizontal: 20, paddingTop: 22, paddingBottom: 18 },
-  modalTitle: { color: Palette.text, fontSize: 22, lineHeight: 28, fontWeight: '800', textAlign: 'center' },
+  modalTitle: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 22, lineHeight: 28, textAlign: 'center' },
   wheelPicker: { height: WHEEL_HEIGHT, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 12, overflow: 'hidden' },
   wheel: { height: WHEEL_HEIGHT, flexGrow: 0 },
   wheelContent: { paddingVertical: WHEEL_PADDING },
   wheelItem: { height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' },
-  wheelText: { color: Palette.textSecondary, fontSize: 20, lineHeight: 28, fontWeight: '700', opacity: 0.38 },
-  selectedWheelText: { color: Palette.text, fontSize: 29, lineHeight: 36, fontWeight: '800', opacity: 1 },
+  wheelText: { color: Palette.textSecondary, fontFamily: FontFamily.bold, fontSize: 20, lineHeight: 28, opacity: 0.38 },
+  selectedWheelText: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 29, lineHeight: 36, opacity: 1 },
   selectionBand: { position: 'absolute', left: 8, right: 8, top: WHEEL_PADDING, height: ITEM_HEIGHT, borderWidth: 1, borderColor: Palette.border, borderRadius: 16, backgroundColor: Palette.softPink },
-  colon: { zIndex: 1, width: 22, color: Palette.text, fontSize: 29, lineHeight: 36, fontWeight: '800', textAlign: 'center' },
+  colon: { zIndex: 1, width: 22, color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 29, lineHeight: 36, textAlign: 'center' },
   modeButton: { alignSelf: 'center', minHeight: 44, justifyContent: 'center', paddingHorizontal: 14, marginTop: 4 },
-  modeButtonText: { color: Palette.strongPink, fontSize: 15, lineHeight: 20, fontWeight: '800' },
+  modeButtonText: { color: Palette.strongPink, fontFamily: FontFamily.extraBold, fontSize: 15, lineHeight: 20 },
   manualSection: { gap: 8, paddingTop: 24, paddingBottom: 14 },
-  inputLabel: { color: Palette.text, fontSize: 15, lineHeight: 20, fontWeight: '800' },
-  manualInput: { minHeight: 58, borderWidth: 1, borderColor: Palette.border, borderRadius: 17, backgroundColor: Palette.white, color: Palette.text, fontSize: 22, lineHeight: 28, fontWeight: '700', textAlign: 'center', paddingHorizontal: 16 },
+  inputLabel: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 15, lineHeight: 20 },
+  manualInput: { minHeight: 58, borderWidth: 1, borderColor: Palette.border, borderRadius: 17, backgroundColor: Palette.white, color: Palette.text, fontFamily: FontFamily.bold, fontSize: 22, lineHeight: 28, textAlign: 'center', paddingHorizontal: 16 },
   manualInputError: { borderColor: Palette.danger },
-  errorText: { color: Palette.danger, fontSize: 13, lineHeight: 18, fontWeight: '700' },
+  errorText: { color: Palette.danger, fontFamily: FontFamily.bold, fontSize: 13, lineHeight: 18 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 18, borderTopWidth: 1, borderTopColor: Palette.border, paddingTop: 16, marginTop: 10 },
   cancelButton: { flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 16 },
-  cancelText: { color: Palette.textSecondary, fontSize: 16, lineHeight: 22, fontWeight: '800' },
+  cancelText: { color: Palette.textSecondary, fontFamily: FontFamily.extraBold, fontSize: 16, lineHeight: 22 },
   doneButton: { flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: Palette.strongPink },
-  doneText: { color: Palette.white, fontSize: 16, lineHeight: 22, fontWeight: '800' },
+  doneText: { color: Palette.white, fontFamily: FontFamily.extraBold, fontSize: 16, lineHeight: 22 },
   pressed: { opacity: 0.68 },
 });

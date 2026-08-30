@@ -1,11 +1,13 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Keyboard, Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { MeddyTimePickerModal, formatFriendlyTime } from '@/components/meddy-time-picker-modal';
+import { PersonalizedReminderAudio, type PersonalizedAudioValue } from '@/components/personalized-reminder-audio';
 import { reminderSoundPreviewSources } from '@/constants/reminder-sound-previews';
 import { Palette } from '@/constants/theme';
-import type { ReminderSound, SnoozeMinutes } from '@/types/medicine';
+import { FontFamily } from '@/constants/typography';
+import type { ReminderSound, SnoozeMinutes, Weekday } from '@/types/medicine';
 
 const reminderSounds: { id: ReminderSound; label: string }[] = [
   { id: 'gentle_chime', label: 'Gentle Chime' },
@@ -14,7 +16,21 @@ const reminderSounds: { id: ReminderSound; label: string }[] = [
 ];
 
 const snoozeOptions: SnoozeMinutes[] = [5, 10, 15];
-const MAX_PREVIEW_MILLISECONDS = 5_000;
+
+// 1=Sunday..7=Saturday, displayed Monday-first.
+const dayChips: { day: Weekday; label: string }[] = [
+  { day: 2, label: 'M' },
+  { day: 3, label: 'T' },
+  { day: 4, label: 'W' },
+  { day: 5, label: 'Th' },
+  { day: 6, label: 'F' },
+  { day: 7, label: 'Sa' },
+  { day: 1, label: 'Su' },
+];
+
+// Bundled alarm sounds are now ~30s each; the in-app preview intentionally plays
+// only a representative excerpt rather than the full clip.
+const MAX_PREVIEW_MILLISECONDS = 8_000;
 // True only once the three MP3s exist under assets/sounds and are wired into
 // reminderSoundPreviewSources. Until then the in-app preview is silent and the
 // actual reminder uses the Android system default notification sound.
@@ -28,28 +44,36 @@ type ActiveSoundPreview = {
 
 type MedicineScheduleSettingsProps = {
   timeOfDay: string;
+  daysOfWeek: Weekday[];
   reminderSound: ReminderSound;
   vibrationEnabled: boolean;
   snoozeEnabled: boolean;
   snoozeMinutes: SnoozeMinutes;
   onTimeChange: (value: string) => void;
+  onDaysOfWeekChange: (value: Weekday[]) => void;
   onSoundChange: (value: ReminderSound) => void;
   onVibrationChange: (value: boolean) => void;
   onSnoozeChange: (value: boolean) => void;
   onSnoozeMinutesChange: (value: SnoozeMinutes) => void;
+  personalizedAudio: PersonalizedAudioValue;
+  onPersonalizedAudioChange: (value: PersonalizedAudioValue) => void;
 };
 
 export function MedicineScheduleSettings({
   timeOfDay,
+  daysOfWeek,
   reminderSound,
   vibrationEnabled,
   snoozeEnabled,
   snoozeMinutes,
   onTimeChange,
+  onDaysOfWeekChange,
   onSoundChange,
   onVibrationChange,
   onSnoozeChange,
   onSnoozeMinutesChange,
+  personalizedAudio,
+  onPersonalizedAudioChange,
 }: MedicineScheduleSettingsProps) {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showSoundPicker, setShowSoundPicker] = useState(false);
@@ -123,9 +147,34 @@ export function MedicineScheduleSettings({
     setShowSoundPicker(false);
   }
 
+  function toggleDay(day: Weekday) {
+    const isSelected = daysOfWeek.includes(day);
+    if (isSelected && daysOfWeek.length === 1) return; // keep at least one day selected
+    const next = isSelected ? daysOfWeek.filter((value) => value !== day) : [...daysOfWeek, day];
+    onDaysOfWeekChange(next);
+  }
+
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Schedule</Text>
+
+      <View accessibilityLabel="Schedule days" style={styles.dayChips}>
+        {dayChips.map(({ day, label }) => {
+          const selected = daysOfWeek.includes(day);
+          return (
+            <Pressable
+              key={day}
+              accessibilityLabel={label}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: selected }}
+              onPress={() => toggleDay(day)}
+              style={({ pressed }) => [styles.dayChip, selected && styles.selectedDayChip, pressed && styles.pressed]}>
+              <Text style={[styles.dayChipText, selected && styles.selectedDayChipText]}>{label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       <View style={styles.card}>
         <Pressable
           accessibilityLabel={`Time, ${formatFriendlyTime(timeOfDay)}`}
@@ -214,29 +263,39 @@ export function MedicineScheduleSettings({
           <Pressable accessibilityLabel="Close sound picker" onPress={closeSoundPicker} style={StyleSheet.absoluteFill} />
           <View accessibilityViewIsModal style={styles.modalCard}>
             <Text style={styles.modalTitle}>Reminder Sound</Text>
-            {!soundPreviewsAvailable ? (
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
+              <Text style={styles.modalSectionLabel}>Meddy Sounds</Text>
+              {!soundPreviewsAvailable ? (
+                <Text style={styles.previewNote}>
+                  Reminders play your device’s default notification sound. In-app previews arrive once custom sounds
+                  are added.
+                </Text>
+              ) : null}
+              {reminderSounds.map((sound) => {
+                const selected = reminderSound === sound.id;
+                return (
+                  <Pressable
+                    key={sound.id}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: selected }}
+                    onPress={() => {
+                      onSoundChange(sound.id);
+                      void previewSound(sound.id);
+                    }}
+                    style={({ pressed }) => [styles.soundOption, selected && styles.selectedSound, pressed && styles.pressed]}>
+                    <Text style={[styles.radio, selected && styles.selectedSoundText]}>{selected ? '●' : '○'}</Text>
+                    <Text style={[styles.soundText, selected && styles.selectedSoundText]}>{sound.label}</Text>
+                  </Pressable>
+                );
+              })}
+
+              <View style={styles.modalDivider} />
+              <Text style={styles.modalSectionLabel}>Personalized</Text>
+              <PersonalizedReminderAudio value={personalizedAudio} onChange={onPersonalizedAudioChange} embedded />
               <Text style={styles.previewNote}>
-                Reminders play your device’s default notification sound. In-app previews arrive once custom sounds
-                are added.
+                Your Meddy alarm still plays one of the Meddy Sounds above — personalized audio plays inside the app.
               </Text>
-            ) : null}
-            {reminderSounds.map((sound) => {
-              const selected = reminderSound === sound.id;
-              return (
-                <Pressable
-                  key={sound.id}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: selected }}
-                  onPress={() => {
-                    onSoundChange(sound.id);
-                    void previewSound(sound.id);
-                  }}
-                  style={({ pressed }) => [styles.soundOption, selected && styles.selectedSound, pressed && styles.pressed]}>
-                  <Text style={[styles.radio, selected && styles.selectedSoundText]}>{selected ? '●' : '○'}</Text>
-                  <Text style={[styles.soundText, selected && styles.selectedSoundText]}>{sound.label}</Text>
-                </Pressable>
-              );
-            })}
+            </ScrollView>
             <Pressable accessibilityRole="button" onPress={closeSoundPicker} style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
               <Text style={styles.closeText}>Done</Text>
             </Pressable>
@@ -249,31 +308,39 @@ export function MedicineScheduleSettings({
 
 const styles = StyleSheet.create({
   section: { gap: 11 },
-  sectionTitle: { color: Palette.text, fontSize: 18, lineHeight: 24, fontWeight: '800', marginTop: 5 },
+  sectionTitle: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 18, lineHeight: 24, marginTop: 5 },
+  dayChips: { flexDirection: 'row', gap: 7 },
+  dayChip: { flex: 1, minHeight: 46, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Palette.border, borderRadius: 14, backgroundColor: Palette.white },
+  selectedDayChip: { borderColor: Palette.strongPink, backgroundColor: Palette.lightPink },
+  dayChipText: { color: Palette.textSecondary, fontFamily: FontFamily.bold, fontSize: 14 },
+  selectedDayChipText: { color: Palette.strongPink },
   card: { borderWidth: 1, borderColor: Palette.border, borderRadius: 20, backgroundColor: Palette.white, overflow: 'hidden' },
   row: { minHeight: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14, paddingHorizontal: 16 },
   divider: { borderBottomWidth: 1, borderBottomColor: Palette.border },
-  rowLabel: { flexShrink: 1, color: Palette.text, fontSize: 16, lineHeight: 22, fontWeight: '800' },
+  rowLabel: { flexShrink: 1, color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 16, lineHeight: 22 },
   rowValueGroup: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 9 },
-  rowValue: { flexShrink: 1, color: Palette.textSecondary, fontSize: 16, lineHeight: 22, textAlign: 'right' },
+  rowValue: { flexShrink: 1, color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 16, lineHeight: 22, textAlign: 'right' },
   chevron: { color: Palette.strongPink, fontSize: 26, lineHeight: 28 },
   snoozeSection: { borderTopWidth: 1, borderTopColor: Palette.border, backgroundColor: Palette.softPink, padding: 16 },
-  snoozeLabel: { color: Palette.text, fontSize: 15, lineHeight: 21, fontWeight: '700' },
+  snoozeLabel: { color: Palette.text, fontFamily: FontFamily.bold, fontSize: 15, lineHeight: 21 },
   snoozeOptions: { flexDirection: 'row', gap: 9, marginTop: 11 },
   snoozeOption: { flex: 1, minHeight: 46, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Palette.border, borderRadius: 14, backgroundColor: Palette.white, paddingHorizontal: 8 },
   selectedOption: { borderColor: Palette.strongPink, backgroundColor: Palette.lightPink },
-  snoozeOptionText: { color: Palette.textSecondary, fontSize: 14, fontWeight: '800' },
+  snoozeOptionText: { color: Palette.textSecondary, fontFamily: FontFamily.extraBold, fontSize: 14 },
   selectedOptionText: { color: Palette.strongPink },
   modalScreen: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(43, 43, 43, 0.3)', padding: 22 },
-  modalCard: { alignSelf: 'center', width: '100%', maxWidth: 440, borderRadius: 24, backgroundColor: Palette.white, padding: 20 },
-  modalTitle: { color: Palette.text, fontSize: 21, lineHeight: 27, fontWeight: '800', marginBottom: 12 },
-  previewNote: { color: Palette.textSecondary, fontSize: 13, lineHeight: 19, marginBottom: 10 },
+  modalCard: { alignSelf: 'center', width: '100%', maxWidth: 440, maxHeight: '86%', borderRadius: 24, backgroundColor: Palette.white, padding: 20 },
+  modalScroll: { flexGrow: 0 },
+  modalTitle: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 21, lineHeight: 27, marginBottom: 12 },
+  modalSectionLabel: { color: Palette.textSecondary, fontFamily: FontFamily.bold, fontSize: 12, letterSpacing: 0.6, marginBottom: 6, marginLeft: 4 },
+  modalDivider: { height: 1, backgroundColor: Palette.border, marginVertical: 16 },
+  previewNote: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 13, lineHeight: 19, marginBottom: 10 },
   soundOption: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, paddingHorizontal: 14 },
   selectedSound: { backgroundColor: Palette.softPink },
-  soundText: { flex: 1, color: Palette.text, fontSize: 16, lineHeight: 22, fontWeight: '700' },
+  soundText: { flex: 1, color: Palette.text, fontFamily: FontFamily.bold, fontSize: 16, lineHeight: 22 },
   selectedSoundText: { color: Palette.strongPink },
   radio: { width: 24, color: Palette.textSecondary, fontSize: 21, textAlign: 'center' },
   closeButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: Palette.strongPink, marginTop: 14 },
-  closeText: { color: Palette.white, fontSize: 16, fontWeight: '800' },
+  closeText: { color: Palette.white, fontFamily: FontFamily.extraBold, fontSize: 16 },
   pressed: { opacity: 0.65 },
 });

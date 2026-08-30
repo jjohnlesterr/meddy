@@ -8,12 +8,14 @@ import { MeddyMascot } from '@/components/meddy-mascot';
 import { MedicineForm } from '@/components/medicine-form';
 import { ScreenShell, sharedStyles } from '@/components/screen-shell';
 import { Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 import { useCareCircles } from '@/context/care-circle-context';
 import { useMedicines } from '@/context/medicine-context';
+import { friendlySupabaseErrorMessage } from '@/lib/supabase';
 import type { Medicine, MedicineInput } from '@/types/medicine';
 
 function messageFromError(error: unknown) {
-  return error instanceof Error ? error.message : 'We could not save this medicine. Please try again.';
+  return friendlySupabaseErrorMessage(error, 'We could not save this medicine. Please try again.');
 }
 
 export default function AddMedicineScreen() {
@@ -113,16 +115,16 @@ export default function AddMedicineScreen() {
 
 const styles = StyleSheet.create({
   loadingCard: { minHeight: 150, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  loadingText: { color: Palette.textSecondary, fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  unavailableTitle: { color: Palette.text, fontSize: 18, lineHeight: 24, fontWeight: '800', textAlign: 'center' },
+  loadingText: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  unavailableTitle: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 18, lineHeight: 24, textAlign: 'center' },
   circleContext: { borderRadius: 18, borderWidth: 1, borderColor: Palette.border, backgroundColor: Palette.softPink, paddingHorizontal: 16, paddingVertical: 13, marginBottom: 20 },
-  circleContextLabel: { color: Palette.textSecondary, fontSize: 11, lineHeight: 16, fontWeight: '800', letterSpacing: 0.8 },
-  circleContextName: { color: Palette.text, fontSize: 17, lineHeight: 23, fontWeight: '800', marginTop: 3 },
+  circleContextLabel: { color: Palette.textSecondary, fontFamily: FontFamily.extraBold, fontSize: 11, lineHeight: 16, letterSpacing: 0.8 },
+  circleContextName: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 17, lineHeight: 23, marginTop: 3 },
   backdrop: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: 'rgba(43, 43, 43, 0.42)' },
   modalCard: { width: '100%', maxWidth: 440, alignSelf: 'center', alignItems: 'center', borderRadius: 28, backgroundColor: Palette.white, padding: 24 },
   mascot: { width: 150, height: 170 },
-  title: { color: Palette.text, fontSize: 25, lineHeight: 32, fontWeight: '800', textAlign: 'center', marginTop: 4 },
-  message: { color: Palette.textSecondary, fontSize: 16, lineHeight: 24, textAlign: 'center', marginTop: 8 },
+  title: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 25, lineHeight: 32, textAlign: 'center', marginTop: 4 },
+  message: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 16, lineHeight: 24, textAlign: 'center', marginTop: 8 },
   doneButton: { alignSelf: 'stretch', marginTop: 24 },
   viewButton: { alignSelf: 'stretch', minHeight: 52, marginTop: 12 },
 });
