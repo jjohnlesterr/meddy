@@ -8,13 +8,16 @@ import { MeddyButton } from '@/components/meddy-button';
 import { MeddyMascot } from '@/components/meddy-mascot';
 import { ScreenShell, sharedStyles } from '@/components/screen-shell';
 import { Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 import { useAppState } from '@/context/app-state';
 import { useCareCircles } from '@/context/care-circle-context';
+import { friendlySupabaseErrorMessage } from '@/lib/supabase';
 import type { CareCircleSummary } from '@/types/care-circle';
 
+const CIRCLE_NAME_MAX_LENGTH = 60;
+
 function messageFromError(error: unknown) {
-  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') return error.message;
-  return 'We could not create this Care Circle. Please try again.';
+  return friendlySupabaseErrorMessage(error, 'We could not create this Care Circle. Please try again.');
 }
 
 export default function CreateCareCircleScreen() {
@@ -31,6 +34,10 @@ export default function CreateCareCircleScreen() {
     if (savingRef.current) return;
     if (!circleName.trim()) {
       setError('Please enter a name for your Care Circle.');
+      return;
+    }
+    if (circleName.trim().length > CIRCLE_NAME_MAX_LENGTH) {
+      setError(`Circle name must be ${CIRCLE_NAME_MAX_LENGTH} characters or fewer.`);
       return;
     }
 
@@ -82,7 +89,7 @@ export default function CreateCareCircleScreen() {
         <Text style={styles.introText}>You’ll be the Owner and approve each person who joins.</Text>
       </View>
       <View style={styles.form}>
-        <FormField label="Circle Name" value={circleName} onChangeText={setCircleName} placeholder="Mom’s Care Circle" autoCapitalize="words" returnKeyType="done" onSubmitEditing={() => void create()} />
+        <FormField label="Circle Name" value={circleName} onChangeText={setCircleName} placeholder="Mom’s Care Circle" autoCapitalize="words" maxLength={CIRCLE_NAME_MAX_LENGTH} returnKeyType="done" onSubmitEditing={() => void create()} />
         {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
         <MeddyButton label={isSaving ? 'Creating…' : 'Create Care Circle'} onPress={() => void create()} disabled={isSaving} />
       </View>
@@ -94,22 +101,22 @@ export default function CreateCareCircleScreen() {
 const styles = StyleSheet.create({
   intro: { minHeight: 165, borderRadius: 26, backgroundColor: Palette.softPink, borderWidth: 1, borderColor: Palette.border, padding: 18, flexDirection: 'row', alignItems: 'center', overflow: 'hidden' },
   introMascot: { width: 125, height: 150, marginBottom: -15 },
-  introText: { flex: 1, color: Palette.text, fontSize: 16, lineHeight: 24, fontWeight: '700', marginLeft: 10 },
+  introText: { flex: 1, color: Palette.text, fontSize: 16, lineHeight: 24, fontFamily: FontFamily.bold, marginLeft: 10 },
   form: { gap: 16, marginTop: 26 },
-  error: { color: Palette.danger, fontSize: 14, fontWeight: '700' },
+  error: { color: Palette.danger, fontSize: 14, fontFamily: FontFamily.bold },
   cancel: { marginTop: 12 },
   successCard: { alignItems: 'center', borderRadius: 28, backgroundColor: Palette.softPink, borderWidth: 1, borderColor: Palette.border, padding: 22 },
   successMascot: { width: 185, height: 210 },
-  successTitle: { color: Palette.text, fontSize: 25, fontWeight: '800', textAlign: 'center' },
-  successText: { color: Palette.textSecondary, fontSize: 15, lineHeight: 23, textAlign: 'center', maxWidth: 460, marginTop: 8 },
+  successTitle: { color: Palette.text, fontSize: 25, fontFamily: FontFamily.extraBold, textAlign: 'center' },
+  successText: { color: Palette.textSecondary, fontSize: 15, lineHeight: 23, textAlign: 'center', maxWidth: 460, marginTop: 8, fontFamily: FontFamily.regular },
   codeCard: { borderRadius: 24, borderWidth: 1, borderColor: Palette.border, padding: 20, alignItems: 'center' },
-  code: { color: Palette.strongPink, fontSize: 27, fontWeight: '800', letterSpacing: 1.5, textAlign: 'center' },
-  codeHint: { color: Palette.textSecondary, fontSize: 13, marginTop: 7 },
+  code: { color: Palette.strongPink, fontSize: 27, fontFamily: FontFamily.extraBold, letterSpacing: 1.5, textAlign: 'center' },
+  codeHint: { color: Palette.textSecondary, fontSize: 13, marginTop: 7, fontFamily: FontFamily.regular },
   shareButton: { alignSelf: 'stretch', marginTop: 20 },
   ownerCard: { flexDirection: 'row', alignItems: 'center' },
   ownerAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: Palette.primaryPink, alignItems: 'center', justifyContent: 'center', marginRight: 13 },
-  ownerInitial: { color: Palette.white, fontSize: 18, fontWeight: '800' },
-  ownerName: { color: Palette.text, fontSize: 17, fontWeight: '800' },
-  ownerRole: { color: Palette.strongPink, fontSize: 13, fontWeight: '700', marginTop: 4 },
+  ownerInitial: { color: Palette.white, fontSize: 18, fontFamily: FontFamily.extraBold },
+  ownerName: { color: Palette.text, fontSize: 17, fontFamily: FontFamily.extraBold },
+  ownerRole: { color: Palette.strongPink, fontSize: 13, fontFamily: FontFamily.bold, marginTop: 4 },
   finishButton: { marginTop: 24 },
 });

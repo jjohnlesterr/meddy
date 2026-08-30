@@ -3,6 +3,7 @@ import type { Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 
 const tabs = [
   { name: 'home', href: '/home' as const, label: 'Home', icon: '⌂' },
@@ -42,8 +43,8 @@ const styles = StyleSheet.create({
   slot: { height: '100%' },
   tabBar: { position: 'absolute', bottom: 16, alignSelf: 'center', flexDirection: 'row', width: '92%', maxWidth: 620, padding: 8, borderRadius: 24, backgroundColor: Palette.white, borderWidth: 1, borderColor: Palette.border, boxShadow: '0 6px 16px rgba(110, 50, 68, 0.12)' },
   tab: { flex: 1, minHeight: 54, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 18 },
-  icon: { color: Palette.textSecondary, fontSize: 21, lineHeight: 22 },
-  label: { color: Palette.textSecondary, fontSize: 11, fontWeight: '600' },
-  selectedText: { color: Palette.strongPink, fontWeight: '800' },
+  icon: { color: Palette.textSecondary, fontSize: 21, lineHeight: 22, fontFamily: FontFamily.regular },
+  label: { color: Palette.textSecondary, fontSize: 11, fontFamily: FontFamily.semiBold },
+  selectedText: { color: Palette.strongPink, fontFamily: FontFamily.extraBold },
   pressed: { opacity: 0.65, backgroundColor: Palette.softPink },
 });

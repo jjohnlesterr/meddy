@@ -8,6 +8,7 @@ import { MeddyMascot } from '@/components/meddy-mascot';
 import { NotificationBell } from '@/components/notification-bell';
 import { ScreenShell, sharedStyles } from '@/components/screen-shell';
 import { Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 import { useCareCircles } from '@/context/care-circle-context';
 import { useMedicines } from '@/context/medicine-context';
 import type { CareCircleRole, CareCircleSummary } from '@/types/care-circle';
@@ -136,30 +137,30 @@ function CareCircleCard({ circle, onPress }: { circle: CareCircleSummary; onPres
 
 const styles = StyleSheet.create({
   stateCard: { minHeight: 150, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  stateText: { color: Palette.textSecondary, fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  errorTitle: { color: Palette.danger, fontSize: 17, lineHeight: 23, fontWeight: '800', textAlign: 'center' },
+  stateText: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  errorTitle: { color: Palette.danger, fontFamily: FontFamily.extraBold, fontSize: 17, lineHeight: 23, textAlign: 'center' },
   retryButton: { minHeight: 48, marginTop: 4 },
   emptyCard: { alignItems: 'center', backgroundColor: Palette.softPink, borderRadius: 30, borderWidth: 1, borderColor: Palette.border, padding: 24 },
   emptyMascot: { width: 205, height: 225 },
-  emptyTitle: { color: Palette.text, fontSize: 23, lineHeight: 30, fontWeight: '800', textAlign: 'center', marginTop: 4 },
-  emptyText: { color: Palette.textSecondary, fontSize: 15, lineHeight: 23, textAlign: 'center', marginTop: 8 },
+  emptyTitle: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 23, lineHeight: 30, textAlign: 'center', marginTop: 4 },
+  emptyText: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 15, lineHeight: 23, textAlign: 'center', marginTop: 8 },
   emptyActions: { alignSelf: 'stretch', gap: 11, marginTop: 22 },
   actionRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   actionButton: { flex: 1, minHeight: 50, borderRadius: 16, paddingHorizontal: 10 },
   list: { gap: 12 },
   circleCard: { minHeight: 88, flexDirection: 'row', alignItems: 'center', padding: 16 },
   circleIcon: { width: 50, height: 50, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.lightPink },
-  circleIconText: { color: Palette.strongPink, fontSize: 28 },
+  circleIconText: { color: Palette.strongPink, fontFamily: FontFamily.regular, fontSize: 28 },
   circleCopy: { flex: 1, marginLeft: 14 },
-  circleName: { color: Palette.text, fontSize: 18, lineHeight: 24, fontWeight: '800' },
-  circleMeta: { color: Palette.textSecondary, fontSize: 14, lineHeight: 20, marginTop: 4 },
-  chevron: { color: Palette.strongPink, fontSize: 28, marginLeft: 8 },
+  circleName: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 18, lineHeight: 24 },
+  circleMeta: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 14, lineHeight: 20, marginTop: 4 },
+  chevron: { color: Palette.strongPink, fontFamily: FontFamily.regular, fontSize: 28, marginLeft: 8 },
   pendingList: { gap: 10 },
   pendingCard: { minHeight: 76, flexDirection: 'row', alignItems: 'center', padding: 15 },
   pendingIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4FBF6' },
-  pendingIconText: { color: Palette.success, fontSize: 20, fontWeight: '800' },
+  pendingIconText: { color: Palette.success, fontFamily: FontFamily.extraBold, fontSize: 20 },
   pendingCopy: { flex: 1, marginLeft: 12 },
-  pendingTitle: { color: Palette.text, fontSize: 16, fontWeight: '800' },
-  pendingText: { color: Palette.textSecondary, fontSize: 13, marginTop: 4 },
+  pendingTitle: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 16 },
+  pendingText: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 13, marginTop: 4 },
   pressed: { opacity: 0.7 },
 });

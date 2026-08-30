@@ -6,11 +6,14 @@ import { FormField } from '@/components/form-field';
 import { MeddyButton } from '@/components/meddy-button';
 import { ScreenShell } from '@/components/screen-shell';
 import { Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 import { useCareCircles } from '@/context/care-circle-context';
+import { friendlySupabaseErrorMessage } from '@/lib/supabase';
+
+const CIRCLE_NAME_MAX_LENGTH = 60;
 
 function messageFromError(error: unknown) {
-  if (__DEV__ && error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') return error.message;
-  return 'We could not save these settings. Please try again.';
+  return friendlySupabaseErrorMessage(error, 'We could not save these settings. Please try again.');
 }
 
 export default function CareCircleSettingsScreen() {
@@ -28,6 +31,10 @@ export default function CareCircleSettingsScreen() {
     if (!circleId || !canManage || isSaving) return;
     if (!name.trim()) {
       setError('Enter a Care Circle name.');
+      return;
+    }
+    if (name.trim().length > CIRCLE_NAME_MAX_LENGTH) {
+      setError(`Circle name must be ${CIRCLE_NAME_MAX_LENGTH} characters or fewer.`);
       return;
     }
 
@@ -58,7 +65,7 @@ export default function CareCircleSettingsScreen() {
   return (
     <ScreenShell keyboardSafe title="Circle Settings" subtitle={circle.name} onBack={() => router.back()}>
       <View style={styles.form}>
-        <FormField label="Circle Name" value={name} onChangeText={setName} autoCapitalize="words" returnKeyType="done" onSubmitEditing={() => void save()} />
+        <FormField label="Circle Name" value={name} onChangeText={setName} autoCapitalize="words" maxLength={CIRCLE_NAME_MAX_LENGTH} returnKeyType="done" onSubmitEditing={() => void save()} />
         {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
         <MeddyButton label={isSaving ? 'Saving…' : 'Save Changes'} onPress={() => void save()} disabled={isSaving} />
         <MeddyButton label="Cancel" onPress={() => router.back()} disabled={isSaving} variant="secondary" />
@@ -69,8 +76,8 @@ export default function CareCircleSettingsScreen() {
 
 const styles = StyleSheet.create({
   form: { gap: 16 },
-  error: { color: Palette.danger, fontSize: 14, lineHeight: 20, fontWeight: '700' },
+  error: { color: Palette.danger, fontSize: 14, lineHeight: 20, fontFamily: FontFamily.bold },
   unavailableCard: { borderRadius: 24, borderWidth: 1, borderColor: Palette.border, backgroundColor: Palette.softPink, padding: 20 },
-  unavailableTitle: { color: Palette.text, fontSize: 19, lineHeight: 25, fontWeight: '800' },
-  unavailableText: { color: Palette.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 6 },
+  unavailableTitle: { color: Palette.text, fontSize: 19, lineHeight: 25, fontFamily: FontFamily.extraBold },
+  unavailableText: { color: Palette.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 6, fontFamily: FontFamily.regular },
 });

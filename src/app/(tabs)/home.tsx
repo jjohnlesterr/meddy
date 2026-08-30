@@ -7,6 +7,7 @@ import { MedicineCard } from '@/components/medicine-card';
 import { NotificationBell } from '@/components/notification-bell';
 import { ScreenShell, sharedStyles } from '@/components/screen-shell';
 import { Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 import { useCareCircles } from '@/context/care-circle-context';
 import { useMedicines } from '@/context/medicine-context';
 import { formatMedicineTime } from '@/lib/medicines';
@@ -74,9 +75,7 @@ export default function HomeScreen() {
         </View>
       )}
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Care Circle</Text>
-      </View>
+      <Text style={sharedStyles.sectionTitle}>Care Circle</Text>
       {circlesLoading ? (
         <View style={[sharedStyles.card, styles.circleState]}>
           <ActivityIndicator color={Palette.strongPink} />
@@ -122,32 +121,30 @@ const styles = StyleSheet.create({
   banner: { height: 126, position: 'relative', overflow: 'hidden', padding: 0, backgroundColor: Palette.softPink },
   bannerImage: { position: 'absolute', right: 2, top: 0, width: '43%', height: '100%' },
   bannerCopy: { width: '59%', height: '100%', justifyContent: 'center', paddingLeft: 18, paddingRight: 8 },
-  bannerTitle: { color: Palette.text, fontSize: 19, lineHeight: 24, fontWeight: '800' },
-  bannerText: { color: Palette.textSecondary, fontSize: 14, lineHeight: 20, marginTop: 5 },
+  bannerTitle: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 19, lineHeight: 24 },
+  bannerText: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 14, lineHeight: 20, marginTop: 5 },
   medicineActionRow: { minHeight: 44, alignItems: 'flex-end', justifyContent: 'center', marginTop: 20, marginBottom: 10 },
-  sectionHeader: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 24, marginBottom: 12 },
-  sectionTitle: { flexShrink: 1, color: Palette.text, fontSize: 21, lineHeight: 27, fontWeight: '800' },
   addButton: { minHeight: 44, borderRadius: 15, backgroundColor: Palette.softPink, paddingHorizontal: 14 },
   medicineState: { minHeight: 92, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16 },
-  stateText: { color: Palette.textSecondary, fontSize: 14, lineHeight: 20 },
-  stateError: { color: Palette.danger, fontSize: 14, lineHeight: 20, fontWeight: '700', textAlign: 'center' },
+  stateText: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 14, lineHeight: 20 },
+  stateError: { color: Palette.danger, fontFamily: FontFamily.bold, fontSize: 14, lineHeight: 20, textAlign: 'center' },
   retryButton: { minHeight: 44, borderRadius: 15, paddingHorizontal: 14 },
   medicineList: { gap: 10 },
   viewAllButton: { minHeight: 46, borderRadius: 15 },
   emptyCard: { padding: 16 },
-  emptyTitle: { color: Palette.text, fontSize: 18, lineHeight: 24, fontWeight: '800' },
-  emptyText: { color: Palette.textSecondary, fontSize: 15, lineHeight: 23, marginTop: 6 },
-  circleActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  circleButton: { flex: 1, minHeight: 48, borderRadius: 16, paddingHorizontal: 12 },
+  emptyTitle: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 18, lineHeight: 24 },
+  emptyText: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 15, lineHeight: 23, marginTop: 6 },
+  circleActions: { gap: 10, marginTop: 14 },
+  circleButton: { minHeight: 52, borderRadius: 16 },
   circleState: { minHeight: 92, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16 },
   circleCard: { padding: 18 },
   circleSummary: { flexDirection: 'row', alignItems: 'center' },
   circleIcon: { width: 48, height: 48, borderRadius: 18, backgroundColor: Palette.lightPink, alignItems: 'center', justifyContent: 'center' },
-  circleIconText: { color: Palette.strongPink, fontSize: 28 },
+  circleIconText: { color: Palette.strongPink, fontFamily: FontFamily.regular, fontSize: 28 },
   circleCopy: { flex: 1, marginLeft: 13 },
-  circleTitle: { color: Palette.text, fontSize: 18, lineHeight: 24, fontWeight: '800' },
-  circleMeta: { color: Palette.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 3 },
-  sharedMedicine: { color: Palette.text, fontSize: 13, lineHeight: 19, fontWeight: '700', marginTop: 3 },
-  moreCircles: { color: Palette.strongPink, fontSize: 13, lineHeight: 19, fontWeight: '700', marginTop: 3 },
+  circleTitle: { color: Palette.text, fontFamily: FontFamily.extraBold, fontSize: 18, lineHeight: 24 },
+  circleMeta: { color: Palette.textSecondary, fontFamily: FontFamily.regular, fontSize: 13, lineHeight: 19, marginTop: 3 },
+  sharedMedicine: { color: Palette.text, fontFamily: FontFamily.bold, fontSize: 13, lineHeight: 19, marginTop: 3 },
+  moreCircles: { color: Palette.strongPink, fontFamily: FontFamily.bold, fontSize: 13, lineHeight: 19, marginTop: 3 },
   openButton: { alignSelf: 'flex-start', minHeight: 46, borderRadius: 15, marginTop: 16, paddingHorizontal: 16 },
 });
