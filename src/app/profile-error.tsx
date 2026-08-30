@@ -6,6 +6,7 @@ import { MeddyButton } from '@/components/meddy-button';
 import { MeddyHeader } from '@/components/meddy-header';
 import { MeddyMascot } from '@/components/meddy-mascot';
 import { Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 import { useAppState } from '@/context/app-state';
 
 export default function ProfileErrorScreen() {
@@ -49,5 +50,5 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Palette.white, paddingHorizontal: 20 },
   content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 24 },
   card: { width: '100%', maxWidth: 480, alignItems: 'center', backgroundColor: Palette.softPink, borderWidth: 1, borderColor: Palette.border, borderRadius: 28, padding: 26 }, mascot: { width: 180, height: 205 },
-  title: { color: Palette.text, fontSize: 23, lineHeight: 30, fontWeight: '800', textAlign: 'center' }, message: { color: Palette.textSecondary, fontSize: 15, lineHeight: 22, textAlign: 'center', marginTop: 8 }, error: { color: Palette.danger, fontSize: 14, marginTop: 12 }, actions: { alignSelf: 'stretch', gap: 11, marginTop: 24 },
+  title: { color: Palette.text, fontSize: 23, lineHeight: 30, fontFamily: FontFamily.extraBold, textAlign: 'center' }, message: { color: Palette.textSecondary, fontSize: 15, lineHeight: 22, textAlign: 'center', marginTop: 8, fontFamily: FontFamily.regular }, error: { color: Palette.danger, fontSize: 14, marginTop: 12, fontFamily: FontFamily.regular }, actions: { alignSelf: 'stretch', gap: 11, marginTop: 24 },
 });

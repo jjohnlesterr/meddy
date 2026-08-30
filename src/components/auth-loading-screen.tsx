@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MeddyLogo } from '@/components/meddy-logo';
 import { Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 
 export function AuthLoadingScreen({ message = 'Getting Meddy ready…' }: { message?: string }) {
   return (
@@ -19,5 +20,5 @@ export function AuthLoadingScreen({ message = 'Getting Meddy ready…' }: { mess
 const styles = StyleSheet.create({
   screen: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.white, padding: 24 },
   card: { width: '100%', maxWidth: 420, alignItems: 'center', backgroundColor: Palette.softPink, borderWidth: 1, borderColor: Palette.border, borderRadius: 28, padding: 30 },
-  logo: { width: 82, height: 82 }, spinner: { marginTop: 22 }, message: { color: Palette.text, fontSize: 17, lineHeight: 24, fontWeight: '700', textAlign: 'center', marginTop: 16 },
+  logo: { width: 82, height: 82 }, spinner: { marginTop: 22 }, message: { color: Palette.text, fontSize: 17, lineHeight: 24, fontFamily: FontFamily.bold, textAlign: 'center', marginTop: 16 },
 });

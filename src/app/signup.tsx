@@ -9,7 +9,8 @@ import { KeyboardSafeFormScreen } from '@/components/keyboard-safe-form-screen';
 import { MeddyButton } from '@/components/meddy-button';
 import { MeddyMascot } from '@/components/meddy-mascot';
 import { MaxContentWidth, Palette } from '@/constants/theme';
-import { useAppState } from '@/context/app-state';
+import { FontFamily } from '@/constants/typography';
+import { FULL_NAME_MAX_LENGTH, useAppState } from '@/context/app-state';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -29,6 +30,10 @@ export default function SignUpScreen() {
     setError('');
     if (!name.trim() || !email.trim() || !password || !confirmPassword) {
       setError('Please complete all fields.');
+      return;
+    }
+    if (name.trim().length > FULL_NAME_MAX_LENGTH) {
+      setError(`Name must be ${FULL_NAME_MAX_LENGTH} characters or fewer.`);
       return;
     }
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
@@ -71,7 +76,7 @@ export default function SignUpScreen() {
     <KeyboardSafeFormScreen contentStyle={styles.content} scrollViewRef={formScrollRef}>
       <View style={styles.heading}><Text style={styles.eyebrow}>CREATE YOUR ACCOUNT</Text><Text style={styles.title}>Let’s get to know you.</Text><Text style={styles.subtitle}>Set up your profile in a few steps.</Text></View>
       <View style={styles.form}>
-        <FormField label="Full Name" value={name} onChangeText={setName} placeholder="Your full name" autoCapitalize="words" autoComplete="name" />
+        <FormField label="Full Name" value={name} onChangeText={setName} placeholder="Your full name" autoCapitalize="words" autoComplete="name" maxLength={FULL_NAME_MAX_LENGTH} />
         <FormField label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" autoCapitalize="none" keyboardType="email-address" autoComplete="email" />
         <FormField label="Password" value={password} onChangeText={setPassword} onFocus={revealPasswordFields} placeholder="Create a password" secureTextEntry showPasswordToggle autoComplete="new-password" />
         <FormField label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} onFocus={revealPasswordFields} placeholder="Enter it again" secureTextEntry showPasswordToggle autoComplete="new-password" />
@@ -85,7 +90,7 @@ export default function SignUpScreen() {
 
 const styles = StyleSheet.create({
   content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', justifyContent: 'flex-start', paddingHorizontal: 24, paddingVertical: 24 },
-  heading: { backgroundColor: Palette.softPink, borderRadius: 26, borderWidth: 1, borderColor: Palette.border, padding: 22 }, eyebrow: { color: Palette.strongPink, fontSize: 12, letterSpacing: 1, fontWeight: '800' }, title: { color: Palette.text, fontSize: 28, lineHeight: 35, fontWeight: '800', marginTop: 7 }, subtitle: { color: Palette.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 8 },
-  form: { gap: 17, marginTop: 24 }, error: { color: Palette.danger, fontSize: 14, fontWeight: '700' }, button: { marginTop: 4 }, linkRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 7, marginTop: 20 }, linkPrompt: { color: Palette.textSecondary, fontSize: 15 }, link: { color: Palette.strongPink, fontSize: 15, fontWeight: '800', paddingVertical: 8 },
-  verificationScreen: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.white, padding: 24 }, verificationCard: { width: '100%', maxWidth: MaxContentWidth, alignItems: 'center', backgroundColor: Palette.softPink, borderRadius: 28, borderWidth: 1, borderColor: Palette.border, padding: 26 }, verificationMascot: { width: 150, height: 180 }, verificationTitle: { color: Palette.text, fontSize: 27, lineHeight: 34, fontWeight: '800', textAlign: 'center' }, verificationText: { color: Palette.textSecondary, fontSize: 16, lineHeight: 24, textAlign: 'center', marginTop: 10 }, verificationButton: { alignSelf: 'stretch', marginTop: 24 },
+  heading: { backgroundColor: Palette.softPink, borderRadius: 26, borderWidth: 1, borderColor: Palette.border, padding: 22 }, eyebrow: { color: Palette.strongPink, fontSize: 12, letterSpacing: 1, fontFamily: FontFamily.extraBold }, title: { color: Palette.text, fontSize: 28, lineHeight: 35, fontFamily: FontFamily.extraBold, marginTop: 7 }, subtitle: { color: Palette.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 8, fontFamily: FontFamily.regular },
+  form: { gap: 17, marginTop: 24 }, error: { color: Palette.danger, fontSize: 14, fontFamily: FontFamily.bold }, button: { marginTop: 4 }, linkRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 7, marginTop: 20 }, linkPrompt: { color: Palette.textSecondary, fontSize: 15, fontFamily: FontFamily.regular }, link: { color: Palette.strongPink, fontSize: 15, fontFamily: FontFamily.extraBold, paddingVertical: 8 },
+  verificationScreen: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.white, padding: 24 }, verificationCard: { width: '100%', maxWidth: MaxContentWidth, alignItems: 'center', backgroundColor: Palette.softPink, borderRadius: 28, borderWidth: 1, borderColor: Palette.border, padding: 26 }, verificationMascot: { width: 150, height: 180 }, verificationTitle: { color: Palette.text, fontSize: 27, lineHeight: 34, fontFamily: FontFamily.extraBold, textAlign: 'center' }, verificationText: { color: Palette.textSecondary, fontSize: 16, lineHeight: 24, textAlign: 'center', marginTop: 10, fontFamily: FontFamily.regular }, verificationButton: { alignSelf: 'stretch', marginTop: 24 },
 });

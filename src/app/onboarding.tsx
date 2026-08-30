@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MeddyButton } from '@/components/meddy-button';
 import { MeddyLogo } from '@/components/meddy-logo';
 import { Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 import { OnboardingPreference, useAppState } from '@/context/app-state';
 
 const options: { value: OnboardingPreference; icon: string; title: string; description: string }[] = [
@@ -52,9 +53,9 @@ export default function OnboardingScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Palette.white }, scroll: { flexGrow: 1 }, safeArea: { flex: 1, alignItems: 'center', paddingHorizontal: 22, paddingVertical: 26 }, content: { width: '100%', maxWidth: 580 },
-  logo: { width: 70, height: 70, alignSelf: 'center' }, title: { color: Palette.text, fontSize: 30, lineHeight: 37, fontWeight: '800', textAlign: 'center', marginTop: 18 }, subtitle: { color: Palette.textSecondary, fontSize: 16, lineHeight: 24, textAlign: 'center', marginTop: 10 },
+  logo: { width: 70, height: 70, alignSelf: 'center' }, title: { color: Palette.text, fontSize: 30, lineHeight: 37, fontFamily: FontFamily.extraBold, textAlign: 'center', marginTop: 18 }, subtitle: { color: Palette.textSecondary, fontSize: 16, lineHeight: 24, textAlign: 'center', marginTop: 10, fontFamily: FontFamily.regular },
   options: { gap: 14, marginTop: 28 }, option: { minHeight: 138, flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: Palette.border, backgroundColor: Palette.white, borderRadius: 24, padding: 20 }, optionSelected: { borderColor: Palette.strongPink, backgroundColor: Palette.softPink }, pressed: { opacity: 0.72 },
-  optionIcon: { width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.softPink }, optionIconSelected: { backgroundColor: Palette.strongPink }, optionIconText: { color: Palette.strongPink, fontSize: 25, fontWeight: '800' }, optionIconTextSelected: { color: Palette.white },
-  optionCopy: { flex: 1, marginLeft: 16 }, optionTitle: { color: Palette.text, fontSize: 19, lineHeight: 25, fontWeight: '800' }, optionDescription: { color: Palette.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 6 },
-  note: { backgroundColor: Palette.softPink, borderRadius: 18, padding: 15, marginTop: 20 }, noteText: { color: Palette.textSecondary, fontSize: 13, lineHeight: 19, textAlign: 'center' }, error: { color: Palette.danger, fontSize: 14, lineHeight: 20, fontWeight: '700', marginTop: 16, textAlign: 'center' }, button: { marginTop: 22 },
+  optionIcon: { width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: Palette.softPink }, optionIconSelected: { backgroundColor: Palette.strongPink }, optionIconText: { color: Palette.strongPink, fontSize: 25, fontFamily: FontFamily.extraBold }, optionIconTextSelected: { color: Palette.white },
+  optionCopy: { flex: 1, marginLeft: 16 }, optionTitle: { color: Palette.text, fontSize: 19, lineHeight: 25, fontFamily: FontFamily.extraBold }, optionDescription: { color: Palette.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 6, fontFamily: FontFamily.regular },
+  note: { backgroundColor: Palette.softPink, borderRadius: 18, padding: 15, marginTop: 20 }, noteText: { color: Palette.textSecondary, fontSize: 13, lineHeight: 19, textAlign: 'center', fontFamily: FontFamily.regular }, error: { color: Palette.danger, fontSize: 14, lineHeight: 20, fontFamily: FontFamily.bold, marginTop: 16, textAlign: 'center' }, button: { marginTop: 22 },
 });

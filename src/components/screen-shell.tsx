@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardSafeFormScreen } from '@/components/keyboard-safe-form-screen';
 import { MeddyHeader } from '@/components/meddy-header';
 import { BottomTabInset, MaxContentWidth, Palette } from '@/constants/theme';
+import { FontFamily } from '@/constants/typography';
 
 type ScreenShellProps = PropsWithChildren<{
   title?: string;
@@ -43,11 +44,11 @@ export const sharedStyles = StyleSheet.create({
       default: { shadowColor: '#7D3E51', shadowOpacity: 0.07, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
     }),
   },
-  sectionTitle: { color: Palette.text, fontSize: 21, lineHeight: 27, fontWeight: '800', marginTop: 28, marginBottom: 14 },
+  sectionTitle: { color: Palette.text, fontSize: 21, lineHeight: 27, fontFamily: FontFamily.extraBold, marginTop: 28, marginBottom: 14 },
 });
 
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: Palette.white }, outer: { alignItems: 'center', paddingHorizontal: 20 },
-  content: { width: '100%', maxWidth: MaxContentWidth }, title: { color: Palette.text, fontSize: 32, lineHeight: 39, fontWeight: '800' },
-  subtitle: { color: Palette.textSecondary, fontSize: 17, lineHeight: 25, marginTop: 5, marginBottom: 22 },
+  content: { width: '100%', maxWidth: MaxContentWidth }, title: { color: Palette.text, fontSize: 32, lineHeight: 39, fontFamily: FontFamily.extraBold },
+  subtitle: { color: Palette.textSecondary, fontSize: 17, lineHeight: 25, marginTop: 5, marginBottom: 22, fontFamily: FontFamily.regular },
 });

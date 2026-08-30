@@ -1,3 +1,11 @@
+import {
+  NunitoSans_400Regular,
+  NunitoSans_500Medium,
+  NunitoSans_600SemiBold,
+  NunitoSans_700Bold,
+  NunitoSans_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/nunito-sans';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -20,7 +28,24 @@ const meddyTheme = {
 };
 
 export default function RootLayout() {
-  useEffect(() => { SplashScreen.hideAsync(); }, []);
+  const [fontsLoaded, fontError] = useFonts({
+    NunitoSans_400Regular,
+    NunitoSans_500Medium,
+    NunitoSans_600SemiBold,
+    NunitoSans_700Bold,
+    NunitoSans_800ExtraBold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) SplashScreen.hideAsync();
+  }, [fontsLoaded, fontError]);
+
+  if (fontError && __DEV__) console.error('[Meddy] Nunito Sans failed to load, using system fallback.', fontError);
+  // Keep the native splash screen up until fonts resolve (loaded or errored) so no
+  // frame is ever painted with the system-font fallback — this is what avoids the
+  // font-swap flash/layout-jump.
+  if (!fontsLoaded && !fontError) return null;
+
   return (
     <ThemeProvider value={meddyTheme}>
       <AppStateProvider>
@@ -51,7 +76,6 @@ function RootNavigator() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Palette.white } }}>
       <Stack.Protected guard={!isAuthenticated}>
         <Stack.Screen name="index" />
-        <Stack.Screen name="auth" />
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />
       </Stack.Protected>
