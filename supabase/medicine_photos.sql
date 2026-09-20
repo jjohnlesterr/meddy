@@ -7,8 +7,8 @@
 -- can_delete_care_circle_medicines, and is_care_circle_member, which the
 -- Storage policies below depend on).
 --
--- NOT YET APPLIED — for review. Do not run against the project until the
--- Meddy engineer/owner has reviewed the RLS policies below.
+-- Already applied to the live project. The policies below reflect the corrected
+-- logic (see the note in section 3); the live fix was shipped as a migration.
 --
 -- Object path convention (set by the app, not enforced by a DB constraint):
 --   {medicine_id}/photo.jpg
@@ -54,10 +54,15 @@ on conflict (id) do nothing;
 -- ownership.
 --
 -- Every policy below matches the object's medicine by comparing
--- (storage.foldername(name))[1] — the first path segment — to
+-- (storage.foldername(objects.name))[1] — the first path segment — to
 -- medicines.id::text. This is a plain text comparison, not a uuid cast, so a
 -- malformed or unexpected path segment simply fails to match any medicine
 -- (access denied) instead of raising a cast error.
+--
+-- The reference MUST be written objects.name, not a bare `name`: inside the
+-- subquery over public.medicines a bare `name` resolves to medicines.name and
+-- the policy then never matches. This was fixed live by
+-- supabase/migrations/20260920121740_fix_medicine_photos_storage_policies.sql.
 
 drop policy if exists "Medicine editors can upload a medicine photo" on storage.objects;
 create policy "Medicine editors can upload a medicine photo"
@@ -67,7 +72,7 @@ with check (
   and exists (
     select 1
     from public.medicines m
-    where m.id::text = (storage.foldername(name))[1]
+    where m.id::text = (storage.foldername(objects.name))[1]
       and (
         (m.care_circle_id is null and m.user_id = (select auth.uid()))
         or (m.care_circle_id is not null and public.can_edit_care_circle_medicines(m.care_circle_id))
@@ -83,7 +88,7 @@ using (
   and exists (
     select 1
     from public.medicines m
-    where m.id::text = (storage.foldername(name))[1]
+    where m.id::text = (storage.foldername(objects.name))[1]
       and (
         (m.care_circle_id is null and m.user_id = (select auth.uid()))
         or (m.care_circle_id is not null and public.can_edit_care_circle_medicines(m.care_circle_id))
@@ -95,7 +100,7 @@ with check (
   and exists (
     select 1
     from public.medicines m
-    where m.id::text = (storage.foldername(name))[1]
+    where m.id::text = (storage.foldername(objects.name))[1]
       and (
         (m.care_circle_id is null and m.user_id = (select auth.uid()))
         or (m.care_circle_id is not null and public.can_edit_care_circle_medicines(m.care_circle_id))
@@ -111,7 +116,7 @@ using (
   and exists (
     select 1
     from public.medicines m
-    where m.id::text = (storage.foldername(name))[1]
+    where m.id::text = (storage.foldername(objects.name))[1]
       and (
         (m.care_circle_id is null and m.user_id = (select auth.uid()))
         or (m.care_circle_id is not null and public.can_delete_care_circle_medicines(m.care_circle_id))
@@ -127,7 +132,7 @@ using (
   and exists (
     select 1
     from public.medicines m
-    where m.id::text = (storage.foldername(name))[1]
+    where m.id::text = (storage.foldername(objects.name))[1]
       and (
         (m.care_circle_id is null and m.user_id = (select auth.uid()))
         or (m.care_circle_id is not null and public.is_care_circle_member(m.care_circle_id))

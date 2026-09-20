@@ -3,8 +3,10 @@ import { supabase, supabaseConfigurationError } from '@/lib/supabase';
 // ---------------------------------------------------------------------------
 // Cross-device storage for medicine photos. Backed by the private
 // `medicine-photos` Supabase Storage bucket — see
-// supabase/medicine_photos.sql for the bucket and RLS policies (NOT YET
-// APPLIED; pending review). Objects are stored at the deterministic path
+// supabase/medicine_photos.sql for the bucket and RLS policies (applied to
+// the live project; the policy fix is in
+// supabase/migrations/20260920121740_fix_medicine_photos_storage_policies.sql).
+// Objects are stored at the deterministic path
 // `{medicineId}/photo.jpg` — every upload is normalized to JPEG first, so a
 // replacement is just an overwrite (upload with upsert: true) and there is
 // never an orphaned previous object to separately clean up.
