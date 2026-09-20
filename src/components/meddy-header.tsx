@@ -9,10 +9,11 @@ const meddyWordmark = require('@/assets/images/meddy/logo with name.png');
 type MeddyHeaderProps = {
   onBack?: () => void;
   rightAction?: ReactNode;
+  showBrand?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
-export function MeddyHeader({ onBack, rightAction, style }: MeddyHeaderProps) {
+export function MeddyHeader({ onBack, rightAction, showBrand = true, style }: MeddyHeaderProps) {
   return (
     <View style={[styles.header, style]}>
       <View style={styles.left}>
@@ -26,7 +27,7 @@ export function MeddyHeader({ onBack, rightAction, style }: MeddyHeaderProps) {
             <Text style={styles.backIcon}>‹</Text>
           </Pressable>
         ) : null}
-        <Image accessibilityLabel="Meddy" resizeMode="contain" source={meddyWordmark} style={styles.wordmark} />
+        {showBrand ? <Image accessibilityLabel="Meddy" resizeMode="contain" source={meddyWordmark} style={styles.wordmark} /> : null}
       </View>
       {rightAction ? <View style={styles.right}>{rightAction}</View> : null}
     </View>

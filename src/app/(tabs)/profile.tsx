@@ -5,7 +5,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { MeddyButton } from '@/components/meddy-button';
 import { MeddyMascot } from '@/components/meddy-mascot';
-import { NotificationBell } from '@/components/notification-bell';
 import { ScreenShell, sharedStyles } from '@/components/screen-shell';
 import { Palette } from '@/constants/theme';
 import { FontFamily } from '@/constants/typography';
@@ -33,7 +32,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScreenShell title="Profile" subtitle="Manage your account and preferences." rightAction={<NotificationBell />}>
+    <ScreenShell title="Profile" subtitle="Manage your account and preferences.">
       <View style={styles.profileCard}><MeddyMascot state="profile" style={styles.mascot} /><View style={styles.profileCopy}>{userName ? <Text style={styles.name}>{userName}</Text> : <Text style={styles.name}>Your account</Text>}<Text style={styles.accountHint}>{userName ? 'Account name' : 'Your name will appear after account creation.'}</Text></View></View>
       <Text style={sharedStyles.sectionTitle}>Settings</Text>
       <View style={styles.menu}>{settings.map((item, index) => <Pressable key={item.label} style={({ pressed }) => [styles.row, index < settings.length - 1 && styles.divider, pressed && styles.pressed]}><View style={styles.icon}><Text style={styles.iconText}>{item.symbol}</Text></View><Text style={styles.rowLabel}>{item.label}</Text><Text style={styles.chevron}>›</Text></Pressable>)}</View>

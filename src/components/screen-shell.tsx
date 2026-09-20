@@ -21,7 +21,8 @@ export function ScreenShell({ title, subtitle, children, keyboardSafe = false, o
   const outerStyle = [styles.outer, { paddingTop: Math.max(insets.top, 20) + 12, paddingBottom: (Platform.OS === 'web' ? 100 : BottomTabInset) + insets.bottom + 28 }];
   const content = (
     <View style={styles.content}>
-      <MeddyHeader onBack={onBack} rightAction={rightAction} />
+      {/* Branded logo header only on untitled screens (Home). Titled screens get a plain back/action row, or none. */}
+      {!title ? <MeddyHeader onBack={onBack} rightAction={rightAction} /> : onBack || rightAction ? <MeddyHeader showBrand={false} onBack={onBack} rightAction={rightAction} /> : null}
       {title ? <Text style={styles.title}>{title}</Text> : null}
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       {children}

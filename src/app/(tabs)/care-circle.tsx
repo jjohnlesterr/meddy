@@ -5,7 +5,6 @@ import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, Text, View } 
 
 import { MeddyButton } from '@/components/meddy-button';
 import { MeddyMascot } from '@/components/meddy-mascot';
-import { NotificationBell } from '@/components/notification-bell';
 import { ScreenShell, sharedStyles } from '@/components/screen-shell';
 import { Palette } from '@/constants/theme';
 import { FontFamily } from '@/constants/typography';
@@ -54,7 +53,6 @@ export default function CareCircleScreen() {
     <ScreenShell
       title="Care Circle"
       subtitle="Private groups for the people you trust."
-      rightAction={<NotificationBell />}
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}

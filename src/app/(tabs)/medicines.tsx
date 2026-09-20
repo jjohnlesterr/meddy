@@ -5,7 +5,6 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { MeddyButton } from '@/components/meddy-button';
 import { MeddyMascot } from '@/components/meddy-mascot';
 import { MedicineCard } from '@/components/medicine-card';
-import { NotificationBell } from '@/components/notification-bell';
 import { ScreenShell, sharedStyles } from '@/components/screen-shell';
 import { Palette } from '@/constants/theme';
 import { FontFamily } from '@/constants/typography';
@@ -16,7 +15,7 @@ export default function MedicinesScreen() {
   const { medicines, isLoading, error, refreshMedicines } = useMedicines();
 
   return (
-    <ScreenShell title="My Medicines" subtitle="Your medicines and daily schedules." rightAction={<NotificationBell />}>
+    <ScreenShell title="Medicines" subtitle="Your medicines and daily schedules.">
       {isLoading ? (
         <View style={[sharedStyles.card, styles.stateCard]}>
           <ActivityIndicator color={Palette.strongPink} size="large" />
