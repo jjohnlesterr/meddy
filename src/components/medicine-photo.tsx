@@ -11,9 +11,9 @@ import { getMedicinePhotoSignedUrl } from '@/lib/medicine-photo-storage';
 
 // Applies to the compressed output, not the original camera/gallery file —
 // a large source photo is fine as long as it compresses under this cap.
-const MAX_UPLOAD_FILE_SIZE_BYTES = 5 * 1024 * 1024;
-const MAX_DIMENSION = 1600;
-const COMPRESS_QUALITY = 0.8;
+const MAX_UPLOAD_FILE_SIZE_BYTES = 2 * 1024 * 1024;
+const MAX_DIMENSION = 1200;
+const COMPRESS_QUALITY = 0.65;
 
 export type MedicinePhotoValue = {
   /** Local, already-resized/compressed JPEG staged for upload. Null means no change staged this session. */
@@ -33,9 +33,34 @@ function isImageAsset(asset: ImagePicker.ImagePickerAsset) {
   return true;
 }
 
+function extensionForAsset(asset: ImagePicker.ImagePickerAsset): string {
+  const mime = asset.mimeType ?? '';
+  if (mime.includes('png')) return 'png';
+  if (mime.includes('heic') || mime.includes('heif')) return 'heic';
+  if (mime.includes('webp')) return 'webp';
+  const match = asset.uri.match(/\.(\w+)(?:\?.*)?$/);
+  return match ? match[1] : 'jpg';
+}
+
+/**
+ * Picker assets on Android are often `content://` URIs whose read grant is only
+ * guaranteed for the immediate result callback — by the time the manipulator's
+ * background task opens it, the OS may have already revoked access. Copying to
+ * a local cache file first gives the manipulator a stable `file://` URI on both
+ * platforms and also normalizes the extension from the asset's actual MIME type.
+ */
+async function copyToLocalCache(asset: ImagePicker.ImagePickerAsset): Promise<string> {
+  const cacheDir = FileSystem.cacheDirectory;
+  if (!cacheDir) return asset.uri;
+  const destUri = `${cacheDir}medicine-photo-${Date.now()}.${extensionForAsset(asset)}`;
+  await FileSystem.copyAsync({ from: asset.uri, to: destUri });
+  return destUri;
+}
+
 /** Resizes to at most MAX_DIMENSION on the longer side (never upscales) and re-encodes as compressed JPEG, so every staged photo has a consistent, deterministic format regardless of source. */
 async function prepareForUpload(asset: ImagePicker.ImagePickerAsset): Promise<string> {
-  const context = ImageManipulator.manipulate(asset.uri);
+  const localUri = await copyToLocalCache(asset);
+  const context = ImageManipulator.manipulate(localUri);
   const longerSide = Math.max(asset.width, asset.height);
   if (longerSide > MAX_DIMENSION) {
     if (asset.width >= asset.height) context.resize({ width: MAX_DIMENSION, height: null });
@@ -101,13 +126,23 @@ export function MedicinePhoto({ value, onChange }: MedicinePhotoProps) {
       const preparedUri = await prepareForUpload(asset);
       const size = await compressedFileSize(preparedUri);
       if (size !== null && size > MAX_UPLOAD_FILE_SIZE_BYTES) {
-        setError('This photo is still larger than 5 MB after compression. Please choose a smaller or simpler photo.');
+        setError('This photo is still larger than 2 MB after compression. Please choose a smaller or simpler photo.');
         return;
       }
       setSignedUrl(null);
       onChange({ localUri: preparedUri, storagePath: value.storagePath });
     } catch (err) {
-      if (__DEV__) console.warn('[Meddy] Could not process this photo.', err);
+      if (__DEV__) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn('[Meddy] Could not process this photo.', {
+          message,
+          stack: err instanceof Error ? err.stack : undefined,
+          assetUri: asset.uri,
+          mimeType: asset.mimeType,
+          width: asset.width,
+          height: asset.height,
+        });
+      }
       setError('Could not use this photo. Please try a different one.');
     } finally {
       setIsBusy(false);
