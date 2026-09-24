@@ -36,6 +36,9 @@ yarn-error.*
 !.env.example
 .env*.local
 
+# Local docs / plans / skills
+docs/
+
 # typescript
 *.tsbuildinfo
 
